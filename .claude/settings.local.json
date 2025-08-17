@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(dotnet build)",
+      "Bash(dotnet build:*)",
+      "Bash(rmdir:*)",
+      "Bash(del CaptureOverlay.xaml)",
+      "Bash(del CaptureOverlay.xaml.cs)",
+      "Bash(del PinnedImageWindow.xaml)",
+      "Bash(del PinnedImageWindow.xaml.cs)",
+      "Bash(rm:*)",
+      "Bash(dotnet run:*)",
+      "Bash(dotnet new:*)",
+      "Bash(del:*)",
+      "Bash(dotnet restore:*)"
+    ],
+    "deny": []
+  }
+}

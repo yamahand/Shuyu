@@ -1,0 +1,243 @@
+# =========================
+# Visual Studio / IDE
+# =========================
+.vs/
+.vscode/
+.idea/
+*.sln.iml
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.vsidx
+*.vspscc
+*.vssscc
+*.vsscc
+*.scc
+
+# =========================
+# Build outputs
+# =========================
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# =========================
+# NuGet
+# =========================
+packages/
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# =========================
+# Test Results
+# =========================
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.coverage
+*.coveragexml
+*.trx
+*.runsettings
+TestResults/
+
+# =========================
+# WPF Specific
+# =========================
+*.xaml.cs.bak
+*.designer.cs.bak
+GeneratedInternalTypeHelper.cs
+*.g.resources
+*.g.cs
+*.g.i.cs
+
+# =========================
+# ASP.NET Scaffolding
+# =========================
+ScaffoldingReadMe.txt
+
+# =========================
+# Logs and temporary files
+# =========================
+*.log
+*.tmp
+*.bak
+*.swp
+*.orig
+*.rej
+*.cache
+*.ilk
+*.meta
+*.pch
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp_proj
+*_wpftmp.csproj
+
+# =========================
+# Debug / Profiling
+# =========================
+*.psess
+*.vsp
+*.vspx
+*.sap
+*.pidb
+*.pdb
+*.mdb
+*.svclog
+*.sdf
+*.dbmdl
+*.opensdf
+*.cachefile
+*.VC.db
+*.VC.VC.opendb
+
+# =========================
+# Windows specific
+# =========================
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# =========================
+# Environment and Security
+# =========================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# =========================
+# Backup & temp files
+# =========================
+*~
+*.autosave
+*.backup
+*.bak
+*.orig
+*.rej
+*_backup
+
+# =========================
+# Microsoft Fakes
+# =========================
+FakesAssemblies/
+
+# =========================
+# CodeRush personal settings
+# =========================
+.cr/personal
+
+# =========================
+# Python Tools for Visual Studio
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# =========================
+# Cake - Uncomment if you are using it
+# =========================
+# tools/**
+# !tools/packages.config
+
+# =========================
+# Tabs Studio
+# =========================
+*.tss
+
+# =========================
+# Telerik's JustMock configuration file
+# =========================
+*.jmconfig
+
+# =========================
+# BizTalk build output
+# =========================
+*.btp.cs
+*.btm.cs
+*.odx.cs
+*.xsd.cs
+
+# =========================
+# OpenCover UI analysis results
+# =========================
+OpenCover/
+
+# =========================
+# Azure Stream Analytics local run output
+# =========================
+ASALocalRun/
+
+# =========================
+# MSBuild Binary and Structured Log
+# =========================
+*.binlog
+
+# =========================
+# NVidia Nsight GPU debugger configuration file
+# =========================
+*.nvuser
+
+# =========================
+# MFractors (Xamarin productivity tool) working folder
+# =========================
+.mfractor/
+
+# =========================
+# Local History for Visual Studio
+# =========================
+.localhistory/
+
+# =========================
+# BeatPulse healthcheck temp database
+# =========================
+healthchecksdb
+
+# =========================
+# Backup folder for Package Reference Convert tool in Visual Studio 2017
+# =========================
+MigrationBackup/
+
+# =========================
+# Ionide (cross platform F# VS Code tools) working folder
+# =========================
+.ionide/
+
+# =========================
+# Fody - auto-generated XML schema
+# =========================
+FodyWeavers.xsd
+
+# =========================
+# MSBuild generated editorconfig
+# =========================
+*.GeneratedMSBuildEditorConfig.editorconfig
