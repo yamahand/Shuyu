@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using Shuyu; // SettingsWindow参照用
 using System.Windows.Forms; // NotifyIcon用
 using System.Drawing;       // Icon用
@@ -6,24 +6,24 @@ using System.Reflection;
 
 public class TrayService : IDisposable
 {
-    private NotifyIcon? trayIcon;
-    private readonly Action onCaptureRequested;
-    private readonly Action onSettingsRequested;
-    private SettingsWindow? settingsWindow;
-    private readonly Action onExitRequested;
+    private NotifyIcon? _trayIcon;
+    private readonly Action _onCaptureRequested;
+    private readonly Action _onSettingsRequested;
+    private SettingsWindow? _settingsWindow;
+    private readonly Action _onExitRequested;
 
     public TrayService(Action onCapture, Action onSettings, Action onExit)
     {
-        onCaptureRequested = onCapture;
-        onSettingsRequested = onSettings;
-        onExitRequested = onExit;
+        _onCaptureRequested = onCapture;
+        _onSettingsRequested = onSettings;
+        _onExitRequested = onExit;
         
         InitializeTrayIcon();
     }
 
     private void InitializeTrayIcon()
     {
-        trayIcon = new NotifyIcon
+        _trayIcon = new NotifyIcon
         {
             Icon = LoadIconFromResource(),
             Visible = true,
@@ -46,24 +46,24 @@ public class TrayService : IDisposable
     {
         var menu = new ContextMenuStrip();
         
-        menu.Items.Add("キャプチャ開始 (F1)", null, (s, e) => onCaptureRequested?.Invoke());
+        menu.Items.Add("キャプチャ開始 (F1)", null, (s, e) => _onCaptureRequested?.Invoke());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("設定", null, (s, e) => ShowSettingsWindow());
         menu.Items.Add("バージョン情報", null, (s, e) => ShowAbout());
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("終了", null, (s, e) => onExitRequested?.Invoke());
+        menu.Items.Add("終了", null, (s, e) => _onExitRequested?.Invoke());
         
         return menu;
     }
 
     private void ShowSettingsWindow()
     {
-        if (settingsWindow == null || !settingsWindow.IsLoaded)
+        if (_settingsWindow == null || !_settingsWindow.IsLoaded)
         {
-            settingsWindow = new SettingsWindow();
+            _settingsWindow = new SettingsWindow();
         }
-        settingsWindow.Show();
-        settingsWindow.Activate();
+        _settingsWindow.Show();
+        _settingsWindow.Activate();
     }
 
     private void ShowAbout()
@@ -78,6 +78,6 @@ public class TrayService : IDisposable
 
     public void Dispose()
     {
-        trayIcon?.Dispose();
+        _trayIcon?.Dispose();
     }
 }

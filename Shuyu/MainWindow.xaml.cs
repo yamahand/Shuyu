@@ -17,7 +17,7 @@ namespace Shuyu
     /// </summary>
     public partial class MainWindow : Window
     {
-        private TrayService trayService;
+        private TrayService? _trayService;
 
         public MainWindow()
         {
@@ -25,16 +25,12 @@ namespace Shuyu
             this.Hide();
             this.ShowInTaskbar = false;
 
-            trayService = new TrayService(
-                onCapture: StartCapture,
-                onSettings: ShowSettings,
-                onExit: ExitApplication
-            );
+            InitializeTrayService();
         }
 
         private void InitializeTrayService()
         {
-            trayService = new TrayService(
+            _trayService = new TrayService(
                 onCapture: StartCapture,
                 onSettings: ShowSettings,
                 onExit: ExitApplication
@@ -44,6 +40,10 @@ namespace Shuyu
         private void StartCapture()
         {
             // キャプチャ機能を呼び出し
+            // キャプチャ機能を呼び出し
+            var overlay = new CaptureOverlayWindow();
+            overlay.Show();
+            overlay.StartCaptureAndShow();
         }
 
         private void ShowSettings()
