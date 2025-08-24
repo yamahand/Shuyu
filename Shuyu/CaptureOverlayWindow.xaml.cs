@@ -9,6 +9,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Controls;
 using System.Windows.Forms;
+using System.Diagnostics;
 
 namespace Shuyu
 {
@@ -17,9 +18,24 @@ namespace Shuyu
     /// </summary>
     public partial class CaptureOverlayWindow : Window
     {
+        /// <summary>
+        /// キャプチャした画面全体のビットマップ（ピクセル単位）
+        /// </summary>
         private System.Drawing.Bitmap? _capturedBitmap;
+        
+        /// <summary>
+        /// マウス選択の開始点（WPF座標系、DIP単位）
+        /// </summary>
         private System.Windows.Point _startPoint;
+        
+        /// <summary>
+        /// 選択領域のジオメトリ（現在未使用）
+        /// </summary>
         private RectangleGeometry _selectionGeometry;
+        
+        /// <summary>
+        /// 選択範囲を表示する矩形図形（シアン色の枠線）
+        /// </summary>
         private System.Windows.Shapes.Rectangle _selectionRect;
 
         /// <summary>
@@ -28,29 +44,38 @@ namespace Shuyu
         public CaptureOverlayWindow()
         {
             InitializeComponent();
+            
+            // 選択領域のジオメトリを初期化（現在未使用）
             _selectionGeometry = new RectangleGeometry();
+            
+            // 選択矩形の見た目を設定（シアン色の枠線、半透明の黒い背景）
             _selectionRect = new System.Windows.Shapes.Rectangle
             {
-                Stroke = System.Windows.Media.Brushes.Cyan,
-                StrokeThickness = 2,
-                Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(50, 0, 0, 0))
+                Stroke = System.Windows.Media.Brushes.Cyan,        // 枠線色：シアン
+                StrokeThickness = 2,                               // 枠線の太さ：2px
+                Fill = new System.Windows.Media.SolidColorBrush(   // 塗りつぶし：半透明の黒
+                    System.Windows.Media.Color.FromArgb(50, 0, 0, 0))
             };
+            // キャンバスに選択矩形を追加
             SelectionCanvas.Children.Add(_selectionRect);
 
-            // フォーカスを確保して Esc を受け取れるようにする
+            // フォーカスを確保して Esc キーを受け取れるようにする設定
             this.Focusable = true;
             this.Loaded += (s, e) =>
             {
+                // ウィンドウをアクティブ化してキーボードフォーカスを設定
                 this.Activate();
                 System.Windows.Input.Keyboard.Focus(this);
             };
+            // Escape キー押下イベントを登録
             this.PreviewKeyDown += CaptureOverlayWindow_PreviewKeyDown;
 
-            // フル仮想スクリーンに合わせる（DIP単位。DPI差がある場合は調整が必要）
-            this.Left = SystemParameters.VirtualScreenLeft;
-            this.Top = SystemParameters.VirtualScreenTop;
-            this.Width = SystemParameters.VirtualScreenWidth;
-            this.Height = SystemParameters.VirtualScreenHeight;
+            // フル仮想スクリーンに合わせてウィンドウサイズと位置を設定（DIP単位）
+            // 注意：DPI差がある環境では調整が必要
+            this.Left = SystemParameters.VirtualScreenLeft;     // 仮想スクリーンの左端
+            this.Top = SystemParameters.VirtualScreenTop;       // 仮想スクリーンの上端
+            this.Width = SystemParameters.VirtualScreenWidth;   // 仮想スクリーンの幅
+            this.Height = SystemParameters.VirtualScreenHeight; // 仮想スクリーンの高さ
         }
 
         /// <summary>
@@ -58,9 +83,11 @@ namespace Shuyu
         /// </summary>
         public void StartCaptureAndShow()
         {
+            // 仮想スクリーン全体をキャプチャ
             CaptureVirtualScreen();
             if (_capturedBitmap != null)
             {
+                // キャプチャした画像をWPFのImageコントロールに表示
                 PreviewImage.Source = BitmapToImageSource(_capturedBitmap);
             }
         }
@@ -70,11 +97,19 @@ namespace Shuyu
         /// </summary>
         private void CaptureVirtualScreen()
         {
-            var vs = SystemInformation.VirtualScreen; // pixel 単位の Rectangle
+            // 仮想スクリーンの範囲を取得（ピクセル単位のRectangle）
+            var vs = SystemInformation.VirtualScreen;
+            
+            // 既存のビットマップがあれば破棄
             _capturedBitmap?.Dispose();
+            
+            // 仮想スクリーン全体のサイズでビットマップを作成（32bit ARGB形式）
             _capturedBitmap = new System.Drawing.Bitmap(vs.Width, vs.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            
+            // Graphics オブジェクトを使って画面をコピー
             using (var g = System.Drawing.Graphics.FromImage(_capturedBitmap))
             {
+                // 仮想スクリーン全体をビットマップにコピー
                 g.CopyFromScreen(vs.Left, vs.Top, 0, 0, new System.Drawing.Size(vs.Width, vs.Height), System.Drawing.CopyPixelOperation.SourceCopy);
             }
         }
@@ -86,11 +121,18 @@ namespace Shuyu
         /// <param name="e">マウスイベント引数。</param>
         private void SelectionCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            // マウス押下位置を選択開始点として記録（キャンバス座標系）
             _startPoint = e.GetPosition(SelectionCanvas);
+
+            Debug.WriteLine($"Selection started at {_startPoint}");
+            
+            // 選択矩形を開始点に配置（幅・高さは0で初期化）
             Canvas.SetLeft(_selectionRect, _startPoint.X);
             Canvas.SetTop(_selectionRect, _startPoint.Y);
             _selectionRect.Width = 0;
             _selectionRect.Height = 0;
+            
+            // マウスキャプチャを開始（ウィンドウ外にマウスが出ても追跡可能）
             CaptureMouse();
         }
 
@@ -101,13 +143,21 @@ namespace Shuyu
         /// <param name="e">マウスイベント引数。</param>
         private void SelectionCanvas_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
         {
+            // マウスがキャプチャされている（ドラッグ中）場合のみ処理
             if (IsMouseCaptured)
             {
+                // 現在のマウス位置を取得
                 var p = e.GetPosition(SelectionCanvas);
-                var x = Math.Min(p.X, _startPoint.X);
-                var y = Math.Min(p.Y, _startPoint.Y);
-                var w = Math.Abs(p.X - _startPoint.X);
-                var h = Math.Abs(p.Y - _startPoint.Y);
+                
+                // 開始点と現在点から矩形の左上座標と幅・高さを計算
+                var x = Math.Min(p.X, _startPoint.X);           // 左端のX座標
+                var y = Math.Min(p.Y, _startPoint.Y);           // 上端のY座標
+                var w = Math.Abs(p.X - _startPoint.X);          // 幅（絶対値）
+                var h = Math.Abs(p.Y - _startPoint.Y);          // 高さ（絶対値）
+
+                Debug.WriteLine($"Selection rectangle updated: {x}, {y}, {w}, {h}");
+
+                // 選択矩形の位置とサイズを更新
                 Canvas.SetLeft(_selectionRect, x);
                 Canvas.SetTop(_selectionRect, y);
                 _selectionRect.Width = w;
@@ -122,19 +172,34 @@ namespace Shuyu
         /// <param name="e">マウスイベント引数。</param>
         private void SelectionCanvas_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
+            // マウスがキャプチャされていない場合は何もしない
             if (!IsMouseCaptured) return;
+            
+            // マウスキャプチャを解除
             ReleaseMouseCapture();
+            
+            // 選択終了点を取得
             var end = e.GetPosition(SelectionCanvas);
-            var x = (int)Math.Min(_startPoint.X, end.X);
-            var y = (int)Math.Min(_startPoint.Y, end.Y);
-            var w = (int)Math.Abs(end.X - _startPoint.X);
-            var h = (int)Math.Abs(end.Y - _startPoint.Y);
+            
+            // 選択領域の矩形を計算（整数ピクセル単位に変換）
+            var x = (int)Math.Min(_startPoint.X, end.X);        // 左端X座標
+            var y = (int)Math.Min(_startPoint.Y, end.Y);        // 上端Y座標
+            var w = (int)Math.Abs(end.X - _startPoint.X);       // 幅
+            var h = (int)Math.Abs(end.Y - _startPoint.Y);       // 高さ
+
+            Debug.WriteLine($"Selection ended at {end}");
+            Debug.WriteLine($"Final selection rectangle: {x}, {y}, {w}, {h}");
+
+            // 有効な選択範囲がある場合のみ切り抜き処理を実行
             if (w > 0 && h > 0)
             {
-                // NOTE: PreviewImage shown in WPF DIPs; capturedBitmap はピクセル。DPI 差がある環境ではここで換算が必要。
-                // 単純実装：ウィンドウ左上が仮想スクリーン左上に対応すると仮定してピクセルにキャスト
+                // 注意：PreviewImageはWPFのDIP単位で表示されているが、
+                // _capturedBitmapはピクセル単位。DPI差がある環境では座標変換が必要
+                // 現在の実装：ウィンドウ左上が仮想スクリーン左上に対応すると仮定
                 CropAndPin(new System.Drawing.Rectangle((int)x, (int)y, w, h));
             }
+            
+            // オーバーレイウィンドウを閉じる
             this.Close();
         }
 
@@ -146,22 +211,32 @@ namespace Shuyu
         {
             try
             {
+                // キャプチャしたビットマップが存在しない場合は何もしない
                 if (_capturedBitmap == null)
                 {
                     return;
                 }
 
-                // rect を安全にクリップ
+                // 矩形領域をビットマップの範囲内に安全にクリップ
                 rect.Intersect(new System.Drawing.Rectangle(0, 0, _capturedBitmap.Width, _capturedBitmap.Height));
+                
+                // クリップ後の矩形が無効な場合は何もしない
                 if (rect.Width <= 0 || rect.Height <= 0)
                 {
                     return;
                 }
+                
+                // 指定された矩形領域を切り抜いて新しいビットマップを作成
                 var cropped = _capturedBitmap.Clone(rect, _capturedBitmap.PixelFormat);
+                
+                // ピン留めウィンドウの作成（現在はコメントアウト）
                 //var pinned = new PinnedWindow(cropped);
                 //pinned.Show();
             }
-            catch { }
+            catch 
+            { 
+                // エラーが発生した場合は無視（例外の詳細は現在ログ出力していない）
+            }
         }
 
         /// <summary>
@@ -171,18 +246,21 @@ namespace Shuyu
         /// <returns>変換された BitmapSource。</returns>
         private BitmapSource BitmapToImageSource(System.Drawing.Bitmap bmp)
         {
+            // ビットマップからHBITMAPハンドルを取得
             var hBitmap = bmp.GetHbitmap();
             try
             {
+                // HBITMAPからWPFのBitmapSourceを作成
                 var src = Imaging.CreateBitmapSourceFromHBitmap(
-                    hBitmap,
-                    IntPtr.Zero,
-                    Int32Rect.Empty,
-                    BitmapSizeOptions.FromEmptyOptions());
+                    hBitmap,                    // ソースのHBITMAPハンドル
+                    IntPtr.Zero,               // パレットハンドル（使用しない）
+                    Int32Rect.Empty,           // ソース矩形（全体を使用）
+                    BitmapSizeOptions.FromEmptyOptions()); // サイズオプション（デフォルト）
                 return src;
             }
             finally
             {
+                // リソースリークを防ぐためHBITMAPハンドルを解放
                 DeleteObject(hBitmap);
             }
         }
@@ -194,13 +272,21 @@ namespace Shuyu
         /// <param name="e">キーイベント引数。</param>
         private void CaptureOverlayWindow_PreviewKeyDown(object? sender, System.Windows.Input.KeyEventArgs e)
         {
+            // Escapeキーが押された場合
             if (e.Key == System.Windows.Input.Key.Escape)
             {
+                // イベントを処理済みとしてマークし、他のハンドラに伝播させない
                 e.Handled = true;
+                // オーバーレイウィンドウを閉じる
                 this.Close();
             }
         }
 
+        /// <summary>
+        /// GDIオブジェクト（HBITMAP等）を削除するためのWin32 API
+        /// </summary>
+        /// <param name="hObject">削除するGDIオブジェクトのハンドル</param>
+        /// <returns>成功した場合はtrue</returns>
         [DllImport("gdi32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool DeleteObject(IntPtr hObject);
