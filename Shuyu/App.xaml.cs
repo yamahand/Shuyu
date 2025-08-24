@@ -9,7 +9,7 @@ using System.Drawing;
 namespace Shuyu
 {
     /// <summary>
-    /// Interaction logic for App.xaml
+    /// アプリケーションエントリポイント。App.xaml のコードビハインドです。
     /// </summary>
     public partial class App : WpfApp
     {

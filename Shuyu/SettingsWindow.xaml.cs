@@ -2,14 +2,22 @@
 
 namespace Shuyu
 {
+    /// <summary>
+    /// 設定ウィンドウ。低レベルキーボードフック使用の選択などを行います。
+    /// </summary>
     public partial class SettingsWindow : Window
     {
+        /// <summary>
+        /// SettingsWindow の新しいインスタンスを初期化します。
+        /// </summary>
         public SettingsWindow()
         {
             InitializeComponent();
         }
 
-        // 設定: 低レベルキーボードフックを使うかどうか
+        /// <summary>
+        /// 低レベルキーボードフックを使用するかどうかの設定。
+        /// </summary>
         public bool useLowLevelHook
         {
             get
@@ -25,6 +33,11 @@ namespace Shuyu
             }
         }
 
+        /// <summary>
+        /// OK ボタンがクリックされたときの処理。DialogResult を true にして画面を閉じます。
+        /// </summary>
+        /// <param name="sender">イベント送信者。</param>
+        /// <param name="e">イベント引数。</param>
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
             this.DialogResult = true;

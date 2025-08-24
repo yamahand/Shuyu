@@ -12,6 +12,9 @@ using System.Windows.Forms;
 
 namespace Shuyu
 {
+    /// <summary>
+    /// キャプチャオーバーレイウィンドウ。仮想スクリーン全体をキャプチャして表示し、矩形選択を可能にします。
+    /// </summary>
     public partial class CaptureOverlayWindow : Window
     {
         private System.Drawing.Bitmap? _capturedBitmap;
@@ -19,6 +22,9 @@ namespace Shuyu
         private RectangleGeometry _selectionGeometry;
         private System.Windows.Shapes.Rectangle _selectionRect;
 
+        /// <summary>
+        /// CaptureOverlayWindow の新しいインスタンスを初期化します。
+        /// </summary>
         public CaptureOverlayWindow()
         {
             InitializeComponent();
@@ -47,6 +53,9 @@ namespace Shuyu
             this.Height = SystemParameters.VirtualScreenHeight;
         }
 
+        /// <summary>
+        /// キャプチャを開始し、オーバーレイに表示します。
+        /// </summary>
         public void StartCaptureAndShow()
         {
             CaptureVirtualScreen();
@@ -56,6 +65,9 @@ namespace Shuyu
             }
         }
 
+        /// <summary>
+        /// 仮想スクリーン全体をキャプチャします。
+        /// </summary>
         private void CaptureVirtualScreen()
         {
             var vs = SystemInformation.VirtualScreen; // pixel 単位の Rectangle
@@ -67,6 +79,11 @@ namespace Shuyu
             }
         }
 
+        /// <summary>
+        /// マウス左ボタンが押されたときの処理。選択開始点を記録し、マウスキャプチャを開始します。
+        /// </summary>
+        /// <param name="sender">イベント送信者。</param>
+        /// <param name="e">マウスイベント引数。</param>
         private void SelectionCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             _startPoint = e.GetPosition(SelectionCanvas);
@@ -77,6 +94,11 @@ namespace Shuyu
             CaptureMouse();
         }
 
+        /// <summary>
+        /// マウス移動時の処理。選択矩形のサイズと位置を更新します。
+        /// </summary>
+        /// <param name="sender">イベント送信者。</param>
+        /// <param name="e">マウスイベント引数。</param>
         private void SelectionCanvas_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
         {
             if (IsMouseCaptured)
@@ -93,6 +115,11 @@ namespace Shuyu
             }
         }
 
+        /// <summary>
+        /// マウス左ボタンが離されたときの処理。選択を完了し、切り抜き処理を実行してウィンドウを閉じます。
+        /// </summary>
+        /// <param name="sender">イベント送信者。</param>
+        /// <param name="e">マウスイベント引数。</param>
         private void SelectionCanvas_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             if (!IsMouseCaptured) return;
@@ -111,6 +138,10 @@ namespace Shuyu
             this.Close();
         }
 
+        /// <summary>
+        /// 指定された矩形領域を切り抜いて、ピン留めウィンドウを作成します（現在はコメントアウト）。
+        /// </summary>
+        /// <param name="rect">切り抜く矩形領域。</param>
         private void CropAndPin(System.Drawing.Rectangle rect)
         {
             try
@@ -133,6 +164,11 @@ namespace Shuyu
             catch { }
         }
 
+        /// <summary>
+        /// System.Drawing.Bitmap を WPF の BitmapSource に変換します。
+        /// </summary>
+        /// <param name="bmp">変換する Bitmap オブジェクト。</param>
+        /// <returns>変換された BitmapSource。</returns>
         private BitmapSource BitmapToImageSource(System.Drawing.Bitmap bmp)
         {
             var hBitmap = bmp.GetHbitmap();
@@ -151,6 +187,11 @@ namespace Shuyu
             }
         }
 
+        /// <summary>
+        /// キー押下イベントの処理。Escape キーでウィンドウを閉じます。
+        /// </summary>
+        /// <param name="sender">イベント送信者。</param>
+        /// <param name="e">キーイベント引数。</param>
         private void CaptureOverlayWindow_PreviewKeyDown(object? sender, System.Windows.Input.KeyEventArgs e)
         {
             if (e.Key == System.Windows.Input.Key.Escape)
