@@ -20,24 +20,24 @@ namespace Shuyu
         /// </summary>
         public event Action? HotkeyPressed;
 
-    /// <summary>
-    /// メッセージ受信用のウィンドウソース（RegisterHotKey の通知を受け取るため）。
-    /// </summary>
-    private HwndSource? _hwndSource;
+        /// <summary>
+        /// メッセージ受信用のウィンドウソース（RegisterHotKey の通知を受け取るため）。
+        /// </summary>
+        private HwndSource? _hwndSource;
 
-    /// <summary>
-    /// 低レベルキーボードフックのハンドル。
-    /// </summary>
-    private IntPtr _keyboardHookId = IntPtr.Zero;
-    /// <summary>
-    /// コールバックデリゲート（GCによる解放を防ぐため保持する）。
-    /// </summary>
-    private LowLevelKeyboardProc? _keyboardProc;
+        /// <summary>
+        /// 低レベルキーボードフックのハンドル。
+        /// </summary>
+        private IntPtr _keyboardHookId = IntPtr.Zero;
+        /// <summary>
+        /// コールバックデリゲート（GCによる解放を防ぐため保持する）。
+        /// </summary>
+        private LowLevelKeyboardProc? _keyboardProc;
 
-    /// <summary>
-    /// イベントをポストするための SynchronizationContext（UI スレッドに戻すため）。
-    /// </summary>
-    private readonly SynchronizationContext? _syncContext;
+        /// <summary>
+        /// イベントをポストするための SynchronizationContext（UI スレッドに戻すため）。
+        /// </summary>
+        private readonly SynchronizationContext? _syncContext;
         private readonly object _lock = new object();
 
         // 定数 (命名規則に合わせて _camelCase )
@@ -49,25 +49,25 @@ namespace Shuyu
         private const int _wmKeydown = 0x0100;
         private const int _wmSysKeydown = 0x0104;
 
-    /// <summary>
-    /// 低レベルフックが現在有効かどうかを示します。
-    /// </summary>
-    public bool useLowLevelHook { get; private set; }
+        /// <summary>
+        /// 低レベルフックが現在有効かどうかを示します。
+        /// </summary>
+        public bool useLowLevelHook { get; private set; }
 
-    /// <summary>
-    /// HotkeyManager の新しいインスタンスを作成します。
-    /// </summary>
-    /// <param name="syncContext">イベントを通知する SynchronizationContext。省略時は現在のコンテキストを使用します。</param>
-    public HotkeyManager(SynchronizationContext? syncContext = null)
+        /// <summary>
+        /// HotkeyManager の新しいインスタンスを作成します。
+        /// </summary>
+        /// <param name="syncContext">イベントを通知する SynchronizationContext。省略時は現在のコンテキストを使用します。</param>
+        public HotkeyManager(SynchronizationContext? syncContext = null)
         {
             _syncContext = syncContext ?? SynchronizationContext.Current;
         }
 
-    /// <summary>
-    /// RegisterHotKey を用いて Shift+PrintScreen を登録します。
-    /// </summary>
-    /// <returns>登録に成功した場合は true。</returns>
-    public bool RegisterShiftPrintScreenHotkey()
+        /// <summary>
+        /// RegisterHotKey を用いて Shift+PrintScreen を登録します。
+        /// </summary>
+        /// <returns>登録に成功した場合は true。</returns>
+        public bool RegisterShiftPrintScreenHotkey()
         {
             lock (_lock)
             {
@@ -83,10 +83,10 @@ namespace Shuyu
             }
         }
 
-    /// <summary>
-    /// 登録したホットキーを解除します。
-    /// </summary>
-    public void UnregisterHotkey()
+        /// <summary>
+        /// 登録したホットキーを解除します。
+        /// </summary>
+        public void UnregisterHotkey()
         {
             lock (_lock)
             {
@@ -100,10 +100,10 @@ namespace Shuyu
             }
         }
 
-    /// <summary>
-    /// 低レベルキーボードフックをインストールします。Shift+PrintScreen を検出して抑止します。
-    /// </summary>
-    public void InstallLowLevelHook()
+        /// <summary>
+        /// 低レベルキーボードフックをインストールします。Shift+PrintScreen を検出して抑止します。
+        /// </summary>
+        public void InstallLowLevelHook()
         {
             lock (_lock)
             {
@@ -128,10 +128,10 @@ namespace Shuyu
             }
         }
 
-    /// <summary>
-    /// インストールした低レベルキーボードフックを解除します。
-    /// </summary>
-    public void UninstallLowLevelHook()
+        /// <summary>
+        /// インストールした低レベルキーボードフックを解除します。
+        /// </summary>
+        public void UninstallLowLevelHook()
         {
             lock (_lock)
             {
@@ -148,11 +148,11 @@ namespace Shuyu
             }
         }
 
-    /// <summary>
-    /// 要求に応じて、RegisterHotKey と低レベルフックの使用を切り替えます。
-    /// </summary>
-    /// <param name="wantHook">低レベルフックを使用したい場合は true。</param>
-    public void ApplyUseLowLevelHook(bool wantHook)
+        /// <summary>
+        /// 要求に応じて、RegisterHotKey と低レベルフックの使用を切り替えます。
+        /// </summary>
+        /// <param name="wantHook">低レベルフックを使用したい場合は true。</param>
+        public void ApplyUseLowLevelHook(bool wantHook)
         {
             if (wantHook == useLowLevelHook) return;
             if (wantHook)
@@ -167,10 +167,10 @@ namespace Shuyu
             }
         }
 
-    /// <summary>
-    /// RegisterHotKey の通知を受け取るためのメッセージ専用ウィンドウを作成します。
-    /// </summary>
-    private void EnsureMessageWindow()
+        /// <summary>
+        /// RegisterHotKey の通知を受け取るためのメッセージ専用ウィンドウを作成します。
+        /// </summary>
+        private void EnsureMessageWindow()
         {
             if (_hwndSource != null) return;
             var p = new HwndSourceParameters("HotkeyMsgWindow")
@@ -185,10 +185,10 @@ namespace Shuyu
             _hwndSource.AddHook(WndProc);
         }
 
-    /// <summary>
-    /// メッセージウィンドウの WndProc。WM_HOTKEY を受け取ってイベントを発火します。
-    /// </summary>
-    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        /// <summary>
+        /// メッセージウィンドウの WndProc。WM_HOTKEY を受け取ってイベントを発火します。
+        /// </summary>
+        private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
             if (msg == _wmHotkey && wParam.ToInt32() == _hotkeyId)
             {
@@ -198,10 +198,10 @@ namespace Shuyu
             return IntPtr.Zero;
         }
 
-    /// <summary>
-    /// HotkeyPressed イベントを適切なスレッドコンテキストで発火します。
-    /// </summary>
-    private void PostHotkeyEvent()
+        /// <summary>
+        /// HotkeyPressed イベントを適切なスレッドコンテキストで発火します。
+        /// </summary>
+        private void PostHotkeyEvent()
         {
             if (_syncContext != null)
             {
@@ -213,10 +213,10 @@ namespace Shuyu
             }
         }
 
-    /// <summary>
-    /// 低レベルフックのコールバック。PrintScreen と Shift の組み合わせを検出してイベントを発火し、抑止します。
-    /// </summary>
-    private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
+        /// <summary>
+        /// 低レベルフックのコールバック。PrintScreen と Shift の組み合わせを検出してイベントを発火し、抑止します。
+        /// </summary>
+        private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
             try
             {
@@ -246,10 +246,10 @@ namespace Shuyu
             return CallNextHookEx(_keyboardHookId, nCode, wParam, lParam);
         }
 
-    /// <summary>
-    /// 使用中のフックとホットキーを解除してリソースを解放します。
-    /// </summary>
-    public void Dispose()
+        /// <summary>
+        /// 使用中のフックとホットキーを解除してリソースを解放します。
+        /// </summary>
+        public void Dispose()
         {
             UninstallLowLevelHook();
             UnregisterHotkey();
