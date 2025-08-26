@@ -1,0 +1,48 @@
+<Window x:Class="Shuyu.DebugLogWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Shuyu - Debug Log"
+        Width="600"
+        Height="400"
+        WindowStyle="SingleBorderWindow"
+        ResizeMode="CanResize"
+        Topmost="True"
+        ShowInTaskbar="False"
+        Background="Black">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        
+        <!-- ログ表示エリア -->
+        <ScrollViewer Grid.Row="0" x:Name="LogScrollViewer" 
+                      VerticalScrollBarVisibility="Auto" 
+                      HorizontalScrollBarVisibility="Auto"
+                      Background="Black">
+            <TextBlock x:Name="LogTextBlock" 
+                       TextWrapping="Wrap" 
+                       FontFamily="Consolas" 
+                       FontSize="12"
+                       Foreground="LimeGreen"
+                       Background="Black"
+                       Padding="10" />
+        </ScrollViewer>
+        
+        <!-- ボタンエリア -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" 
+                    HorizontalAlignment="Right" 
+                    Background="DarkGray"
+                    Margin="5">
+            <Button x:Name="ClearButton" Content="クリア" 
+                    Width="80" Height="30" Margin="5"
+                    Click="ClearButton_Click" />
+            <Button x:Name="SaveButton" Content="保存" 
+                    Width="80" Height="30" Margin="5"
+                    Click="SaveButton_Click" />
+            <Button x:Name="CloseButton" Content="閉じる" 
+                    Width="80" Height="30" Margin="5"
+                    Click="CloseButton_Click" />
+        </StackPanel>
+    </Grid>
+</Window>

@@ -10,6 +10,7 @@ using System.Windows.Shapes;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Diagnostics;
+using Shuyu.Service; // LogService用
 
 namespace Shuyu
 {
@@ -45,6 +46,14 @@ namespace Shuyu
         {
             InitializeComponent();
             
+            LogService.LogDebug("CaptureOverlayWindow を初期化しています");
+            
+            // デバッグ時はTopmostをfalseにしてDebugLogWindowを前面に保つ
+#if DEBUG
+            this.Topmost = false;
+            LogService.LogInfo("デバッグモード: CaptureOverlayWindowのTopmostをfalseに設定");
+#endif
+            
             // 選択領域のジオメトリを初期化（現在未使用）
             _selectionGeometry = new RectangleGeometry();
             
@@ -66,6 +75,7 @@ namespace Shuyu
                 // ウィンドウをアクティブ化してキーボードフォーカスを設定
                 this.Activate();
                 System.Windows.Input.Keyboard.Focus(this);
+                LogService.LogDebug("CaptureOverlayWindow がアクティブ化されました");
             };
             // Escape キー押下イベントを登録
             this.PreviewKeyDown += CaptureOverlayWindow_PreviewKeyDown;
@@ -76,6 +86,9 @@ namespace Shuyu
             this.Top = SystemParameters.VirtualScreenTop;       // 仮想スクリーンの上端
             this.Width = SystemParameters.VirtualScreenWidth;   // 仮想スクリーンの幅
             this.Height = SystemParameters.VirtualScreenHeight; // 仮想スクリーンの高さ
+            
+            LogService.LogFormat("ウィンドウサイズ設定: ({0}, {1}, {2}, {3})", 
+                this.Left, this.Top, this.Width, this.Height);
         }
 
         /// <summary>
@@ -83,12 +96,20 @@ namespace Shuyu
         /// </summary>
         public void StartCaptureAndShow()
         {
+            LogService.LogInfo("画面キャプチャを開始します");
+            
             // 仮想スクリーン全体をキャプチャ
             CaptureVirtualScreen();
             if (_capturedBitmap != null)
             {
                 // キャプチャした画像をWPFのImageコントロールに表示
                 PreviewImage.Source = BitmapToImageSource(_capturedBitmap);
+                LogService.LogFormat("キャプチャ完了: {0}x{1} ピクセル", 
+                    _capturedBitmap.Width, _capturedBitmap.Height);
+            }
+            else
+            {
+                LogService.LogError("画面キャプチャに失敗しました");
             }
         }
 
@@ -124,7 +145,7 @@ namespace Shuyu
             // マウス押下位置を選択開始点として記録（キャンバス座標系）
             _startPoint = e.GetPosition(SelectionCanvas);
 
-            Debug.WriteLine($"Selection started at {_startPoint}");
+            LogService.LogFormat($"Selection started at {_startPoint}");
             
             // 選択矩形を開始点に配置（幅・高さは0で初期化）
             Canvas.SetLeft(_selectionRect, _startPoint.X);
@@ -155,7 +176,7 @@ namespace Shuyu
                 var w = Math.Abs(p.X - _startPoint.X);          // 幅（絶対値）
                 var h = Math.Abs(p.Y - _startPoint.Y);          // 高さ（絶対値）
 
-                Debug.WriteLine($"Selection rectangle updated: {x}, {y}, {w}, {h}");
+                LogService.LogFormat($"Selection rectangle updated: {x}, {y}, {w}, {h}");
 
                 // 選択矩形の位置とサイズを更新
                 Canvas.SetLeft(_selectionRect, x);
@@ -187,8 +208,8 @@ namespace Shuyu
             var w = (int)Math.Abs(end.X - _startPoint.X);       // 幅
             var h = (int)Math.Abs(end.Y - _startPoint.Y);       // 高さ
 
-            Debug.WriteLine($"Selection ended at {end}");
-            Debug.WriteLine($"Final selection rectangle: {x}, {y}, {w}, {h}");
+            LogService.LogFormat($"Selection ended at {end}");
+            LogService.LogFormat($"Final selection rectangle: {x}, {y}, {w}, {h}");
 
             // 有効な選択範囲がある場合のみ切り抜き処理を実行
             if (w > 0 && h > 0)
@@ -209,33 +230,50 @@ namespace Shuyu
         /// <param name="rect">切り抜く矩形領域。</param>
         private void CropAndPin(System.Drawing.Rectangle rect)
         {
+            LogService.LogFormat("CropAndPin開始 - 矩形: X={0}, Y={1}, Width={2}, Height={3}", 
+                rect.X, rect.Y, rect.Width, rect.Height);
+            
             try
             {
                 // キャプチャしたビットマップが存在しない場合は何もしない
                 if (_capturedBitmap == null)
                 {
+                    LogService.LogError("CropAndPin: キャプチャされたビットマップがありません");
                     return;
                 }
 
+                LogService.LogFormat("ビットマップサイズ: {0}x{1}", 
+                    _capturedBitmap.Width, _capturedBitmap.Height);
+
                 // 矩形領域をビットマップの範囲内に安全にクリップ
+                var originalRect = rect;
                 rect.Intersect(new System.Drawing.Rectangle(0, 0, _capturedBitmap.Width, _capturedBitmap.Height));
+                
+                if (!originalRect.Equals(rect))
+                {
+                    LogService.LogFormat("矩形をクリップしました: {0} → {1}", originalRect, rect);
+                }
                 
                 // クリップ後の矩形が無効な場合は何もしない
                 if (rect.Width <= 0 || rect.Height <= 0)
                 {
+                    LogService.LogWarning("CropAndPin: クリップ後の矩形が無効です");
                     return;
                 }
                 
                 // 指定された矩形領域を切り抜いて新しいビットマップを作成
                 var cropped = _capturedBitmap.Clone(rect, _capturedBitmap.PixelFormat);
+                LogService.LogFormat("画像クロップ完了: {0}x{1} ピクセル", 
+                    cropped.Width, cropped.Height);
                 
                 // ピン留めウィンドウの作成（現在はコメントアウト）
                 //var pinned = new PinnedWindow(cropped);
                 //pinned.Show();
+                LogService.LogInfo("PinnedWindow作成処理完了（コメントアウト中）");
             }
-            catch 
+            catch (Exception ex)
             { 
-                // エラーが発生した場合は無視（例外の詳細は現在ログ出力していない）
+                LogService.LogException(ex, "CropAndPin処理中にエラーが発生しました");
             }
         }
 
@@ -246,6 +284,8 @@ namespace Shuyu
         /// <returns>変換された BitmapSource。</returns>
         private BitmapSource BitmapToImageSource(System.Drawing.Bitmap bmp)
         {
+            LogService.LogDebug("BitmapからBitmapSourceへの変換を開始");
+            
             // ビットマップからHBITMAPハンドルを取得
             var hBitmap = bmp.GetHbitmap();
             try
@@ -256,7 +296,14 @@ namespace Shuyu
                     IntPtr.Zero,               // パレットハンドル（使用しない）
                     Int32Rect.Empty,           // ソース矩形（全体を使用）
                     BitmapSizeOptions.FromEmptyOptions()); // サイズオプション（デフォルト）
+                
+                LogService.LogDebug("BitmapSource変換完了");
                 return src;
+            }
+            catch (Exception ex)
+            {
+                LogService.LogException(ex, "BitmapからBitmapSourceへの変換中にエラーが発生しました");
+                throw;
             }
             finally
             {
@@ -272,9 +319,12 @@ namespace Shuyu
         /// <param name="e">キーイベント引数。</param>
         private void CaptureOverlayWindow_PreviewKeyDown(object? sender, System.Windows.Input.KeyEventArgs e)
         {
+            LogService.LogDebug($"キー押下イベント: {e.Key}");
+            
             // Escapeキーが押された場合
             if (e.Key == System.Windows.Input.Key.Escape)
             {
+                LogService.LogInfo("Escapeキーが押されました - オーバーレイを閉じます");
                 // イベントを処理済みとしてマークし、他のハンドラに伝播させない
                 e.Handled = true;
                 // オーバーレイウィンドウを閉じる
