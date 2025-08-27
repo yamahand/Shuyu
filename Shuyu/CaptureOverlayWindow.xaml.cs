@@ -87,8 +87,7 @@ namespace Shuyu
             this.Width = SystemParameters.VirtualScreenWidth;   // 仮想スクリーンの幅
             this.Height = SystemParameters.VirtualScreenHeight; // 仮想スクリーンの高さ
             
-            LogService.LogFormat("ウィンドウサイズ設定: ({0}, {1}, {2}, {3})", 
-                this.Left, this.Top, this.Width, this.Height);
+            LogService.LogInfo($"ウィンドウサイズ設定: ({this.Left}, {this.Top}, {this.Width}, {this.Height})");
         }
 
         /// <summary>
@@ -104,8 +103,7 @@ namespace Shuyu
             {
                 // キャプチャした画像をWPFのImageコントロールに表示
                 PreviewImage.Source = BitmapToImageSource(_capturedBitmap);
-                LogService.LogFormat("キャプチャ完了: {0}x{1} ピクセル", 
-                    _capturedBitmap.Width, _capturedBitmap.Height);
+                LogService.LogInfo($"キャプチャ完了: {_capturedBitmap.Width}x{_capturedBitmap.Height} ピクセル");
             }
             else
             {
@@ -145,7 +143,7 @@ namespace Shuyu
             // マウス押下位置を選択開始点として記録（キャンバス座標系）
             _startPoint = e.GetPosition(SelectionCanvas);
 
-            LogService.LogFormat($"Selection started at {_startPoint}");
+            LogService.LogInfo($"Selection started at {_startPoint}");
             
             // 選択矩形を開始点に配置（幅・高さは0で初期化）
             Canvas.SetLeft(_selectionRect, _startPoint.X);
@@ -154,7 +152,7 @@ namespace Shuyu
             _selectionRect.Height = 0;
             
             // マウスキャプチャを開始（ウィンドウ外にマウスが出ても追跡可能）
-            CaptureMouse();
+            SelectionCanvas.CaptureMouse();
         }
 
         /// <summary>
@@ -164,8 +162,10 @@ namespace Shuyu
         /// <param name="e">マウスイベント引数。</param>
         private void SelectionCanvas_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
         {
+            LogService.LogInfo($"MouseMoveイベント発生: {IsMouseCaptured}");
+
             // マウスがキャプチャされている（ドラッグ中）場合のみ処理
-            if (IsMouseCaptured)
+            if (SelectionCanvas.IsMouseCaptured)
             {
                 // 現在のマウス位置を取得
                 var p = e.GetPosition(SelectionCanvas);
@@ -176,7 +176,7 @@ namespace Shuyu
                 var w = Math.Abs(p.X - _startPoint.X);          // 幅（絶対値）
                 var h = Math.Abs(p.Y - _startPoint.Y);          // 高さ（絶対値）
 
-                LogService.LogFormat($"Selection rectangle updated: {x}, {y}, {w}, {h}");
+                LogService.LogInfo($"Selection rectangle updated: {x}, {y}, {w}, {h}");
 
                 // 選択矩形の位置とサイズを更新
                 Canvas.SetLeft(_selectionRect, x);
@@ -193,12 +193,12 @@ namespace Shuyu
         /// <param name="e">マウスイベント引数。</param>
         private void SelectionCanvas_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            // マウスがキャプチャされていない場合は何もしない
-            if (!IsMouseCaptured) return;
-            
-            // マウスキャプチャを解除
-            ReleaseMouseCapture();
-            
+            // Canvas がキャプチャしていなければ中止
+            if (!SelectionCanvas.IsMouseCaptured) return;
+
+            // Canvas のキャプチャを解除
+            SelectionCanvas.ReleaseMouseCapture();
+
             // 選択終了点を取得
             var end = e.GetPosition(SelectionCanvas);
             
@@ -208,8 +208,8 @@ namespace Shuyu
             var w = (int)Math.Abs(end.X - _startPoint.X);       // 幅
             var h = (int)Math.Abs(end.Y - _startPoint.Y);       // 高さ
 
-            LogService.LogFormat($"Selection ended at {end}");
-            LogService.LogFormat($"Final selection rectangle: {x}, {y}, {w}, {h}");
+            LogService.LogInfo($"Selection ended at {end}");
+            LogService.LogInfo($"Final selection rectangle: {x}, {y}, {w}, {h}");
 
             // 有効な選択範囲がある場合のみ切り抜き処理を実行
             if (w > 0 && h > 0)
@@ -230,8 +230,7 @@ namespace Shuyu
         /// <param name="rect">切り抜く矩形領域。</param>
         private void CropAndPin(System.Drawing.Rectangle rect)
         {
-            LogService.LogFormat("CropAndPin開始 - 矩形: X={0}, Y={1}, Width={2}, Height={3}", 
-                rect.X, rect.Y, rect.Width, rect.Height);
+            LogService.LogInfo($"CropAndPin開始 - 矩形: X={rect.X}, Y={rect.Y}, Width={rect.Width}, Height={rect.Height}"); 
             
             try
             {
@@ -242,8 +241,7 @@ namespace Shuyu
                     return;
                 }
 
-                LogService.LogFormat("ビットマップサイズ: {0}x{1}", 
-                    _capturedBitmap.Width, _capturedBitmap.Height);
+                LogService.LogInfo($"ビットマップサイズ: {_capturedBitmap.Width}x{_capturedBitmap.Height}"); 
 
                 // 矩形領域をビットマップの範囲内に安全にクリップ
                 var originalRect = rect;
@@ -251,7 +249,7 @@ namespace Shuyu
                 
                 if (!originalRect.Equals(rect))
                 {
-                    LogService.LogFormat("矩形をクリップしました: {0} → {1}", originalRect, rect);
+                    LogService.LogInfo($"矩形をクリップしました: {originalRect} → {rect}");
                 }
                 
                 // クリップ後の矩形が無効な場合は何もしない
@@ -262,9 +260,21 @@ namespace Shuyu
                 }
                 
                 // 指定された矩形領域を切り抜いて新しいビットマップを作成
-                var cropped = _capturedBitmap.Clone(rect, _capturedBitmap.PixelFormat);
-                LogService.LogFormat("画像クロップ完了: {0}x{1} ピクセル", 
-                    cropped.Width, cropped.Height);
+                using var cropped = _capturedBitmap.Clone(rect, _capturedBitmap.PixelFormat);
+                LogService.LogInfo($"画像クロップ完了: {cropped.Width}x{cropped.Height} ピクセル"); 
+
+                // クリップボードへコピー（WPF Clipboard は BitmapSource を受け取る）
+                try
+                {
+                    var src = BitmapToImageSource(cropped);
+                    if (src.CanFreeze) src.Freeze();
+                    System.Windows.Clipboard.SetImage(src);
+                    LogService.LogInfo("切り抜き画像をクリップボードにコピーしました");
+                }
+                catch (Exception ex)
+                {
+                    LogService.LogException(ex, "クリップボードへのコピーに失敗しました");
+                }
                 
                 // ピン留めウィンドウの作成（現在はコメントアウト）
                 //var pinned = new PinnedWindow(cropped);
