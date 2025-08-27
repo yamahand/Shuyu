@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -44,11 +44,6 @@ namespace Shuyu
         private readonly Dispatcher _dispatcher;
         
         /// <summary>
-        /// 最前面表示を維持するためのタイマー
-        /// </summary>
-        private readonly DispatcherTimer _keepFrontTimer;
-        
-        /// <summary>
         /// 最大ログ行数（メモリ使用量制限のため）
         /// </summary>
         private const int MaxLogLines = 1000;
@@ -57,6 +52,11 @@ namespace Shuyu
         /// 現在のログ行数
         /// </summary>
         private int _currentLogLines = 0;
+
+        /// <summary>
+        /// Close を許可するフラグ（通常は OnClosing でキャンセルする）
+        /// </summary>
+        private bool _allowClose = false;
 
         /// <summary>
         /// DebugLogWindow の新しいインスタンスを初期化します。
@@ -69,11 +69,6 @@ namespace Shuyu
             _logBuffer = new StringBuilder();
             _dispatcher = Dispatcher.CurrentDispatcher;
             
-            // 最前面表示維持タイマーを初期化
-            _keepFrontTimer = new DispatcherTimer();
-            _keepFrontTimer.Interval = TimeSpan.FromSeconds(2); // 2秒間隔
-            _keepFrontTimer.Tick += KeepFrontTimer_Tick;
-            
             // ウィンドウの初期設定
             InitializeWindowSettings();
             
@@ -85,14 +80,21 @@ namespace Shuyu
         }
 
         /// <summary>
+        /// 強制的にウィンドウを閉じます（OnClosing のキャンセルを無効化）。
+        /// </summary>
+        public void ForceClose()
+        {
+            _allowClose = true;
+            this.Close();
+        }
+
+        /// <summary>
         /// ウィンドウがロードされたときの処理
         /// </summary>
         private void DebugLogWindow_Loaded(object sender, RoutedEventArgs e)
         {
             // ロード後に最前面表示を実行
             BringToAbsoluteFront();
-            // タイマーを開始して最前面を維持
-            StartKeepingFront();
         }
 
         /// <summary>
@@ -105,24 +107,6 @@ namespace Shuyu
             {
                 BringToAbsoluteFront();
             }
-        }
-
-        /// <summary>
-        /// 最前面表示維持を開始します
-        /// </summary>
-        public void StartKeepingFront()
-        {
-            _keepFrontTimer.Start();
-            AddLog("最前面表示維持を開始しました");
-        }
-
-        /// <summary>
-        /// 最前面表示維持を停止します
-        /// </summary>
-        public void StopKeepingFront()
-        {
-            _keepFrontTimer.Stop();
-            AddLog("最前面表示維持を停止しました");
         }
 
         /// <summary>
@@ -326,9 +310,16 @@ namespace Shuyu
         /// <param name="e">イベント引数</param>
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
-            // 閉じる操作をキャンセルして非表示にする
-            e.Cancel = true;
-            this.Hide();
+            if (!_allowClose)
+            {
+                // 閉じる操作をキャンセルして非表示にする
+                e.Cancel = true;
+                this.Hide();
+            }
+            else
+            {
+                base.OnClosing(e);
+            }
         }
 
         /// <summary>

@@ -1,4 +1,5 @@
-using System;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Windows.Threading;
 
 namespace Shuyu.Service
@@ -9,54 +10,52 @@ namespace Shuyu.Service
     /// </summary>
     public class LogService
     {
+        // ログレベルの内部表現
+        private enum LogLevel { None, Info, Warning, Error }
+
         /// <summary>
-        /// シングルトンインスタンス
+        /// シングルトンインスタンス（Lazy 初期化）
         /// </summary>
-        private static LogService? _instance;
-        
+        private static readonly Lazy<LogService> _lazy = new(() => new LogService());
+
         /// <summary>
-        /// スレッドセーフなインスタンス取得用のロックオブジェクト
+        /// シングルトンインスタンスを取得します。
         /// </summary>
-        private static readonly object _lock = new object();
-        
+        public static LogService Instance => _lazy.Value;
+
         /// <summary>
         /// ログウィンドウのインスタンス
         /// </summary>
         private DebugLogWindow? _debugLogWindow;
-        
+
         /// <summary>
-        /// UIスレッドのDispatcher
+        /// UI Dispatcher を動的に解決します。
         /// </summary>
-        private readonly Dispatcher _dispatcher;
+        private Dispatcher uiDispatcher =>
+            _debugLogWindow?.Dispatcher
+            ?? System.Windows.Application.Current?.Dispatcher
+            ?? Dispatcher.CurrentDispatcher;
+
+        /// <summary>
+        /// ウィンドウ未初期化時に蓄積する保留ログ
+        /// </summary>
+        private readonly ConcurrentQueue<(LogLevel Level, string Message)> _pendingLogs = new();
 
         /// <summary>
         /// プライベートコンストラクタ（シングルトンパターン）
         /// </summary>
         private LogService()
         {
-            _dispatcher = Dispatcher.CurrentDispatcher;
         }
 
         /// <summary>
-        /// シングルトンインスタンスを取得します。
+        /// UI スレッドで処理を実行するヘルパー
         /// </summary>
-        public static LogService Instance
+        private void RunOnUI(Action action)
         {
-            get
-            {
-                // ダブルチェックロッキングパターンでスレッドセーフに初期化
-                if (_instance == null)
-                {
-                    lock (_lock)
-                    {
-                        if (_instance == null)
-                        {
-                            _instance = new LogService();
-                        }
-                    }
-                }
-                return _instance;
-            }
+            var d = uiDispatcher;
+            if (d.CheckAccess()) action();
+            else d.BeginInvoke(action);
         }
 
         /// <summary>
@@ -64,21 +63,43 @@ namespace Shuyu.Service
         /// </summary>
         public void InitializeLogWindow()
         {
-            if (_debugLogWindow == null)
+            RunOnUI(() =>
             {
-                _debugLogWindow = new DebugLogWindow();
-                
-                // デバッグビルド時のみ表示
+                if (_debugLogWindow == null)
+                {
+                    _debugLogWindow = new DebugLogWindow();
 #if DEBUG
-                _debugLogWindow.Show();
-                // 遅延実行で確実に最前面に表示
-                System.Windows.Threading.Dispatcher.CurrentDispatcher.BeginInvoke(
-                    System.Windows.Threading.DispatcherPriority.ApplicationIdle,
-                    new Action(() => {
-                        _debugLogWindow.BringToAbsoluteFront();
-                    }));
+                    _debugLogWindow.Show();
+                    // 遅延実行で確実に最前面に表示
+                    _debugLogWindow.Dispatcher.BeginInvoke(
+                        DispatcherPriority.ApplicationIdle,
+                        new Action(() => { _debugLogWindow.BringToAbsoluteFront(); }));
 #endif
-            }
+                }
+
+                // 保留ログをフラッシュ
+                if (!_pendingLogs.IsEmpty && _debugLogWindow != null)
+                {
+                    while (_pendingLogs.TryDequeue(out var item))
+                    {
+                        switch (item.Level)
+                        {
+                            case LogLevel.Info:
+                                _debugLogWindow.AddInfoLog(item.Message);
+                                break;
+                            case LogLevel.Warning:
+                                _debugLogWindow.AddWarningLog(item.Message);
+                                break;
+                            case LogLevel.Error:
+                                _debugLogWindow.AddErrorLog(item.Message);
+                                break;
+                            default:
+                                _debugLogWindow.AddLog(item.Message);
+                                break;
+                        }
+                    }
+                }
+            });
         }
 
         /// <summary>
@@ -86,12 +107,15 @@ namespace Shuyu.Service
         /// </summary>
         public void ShowLogWindow()
         {
-            if (_debugLogWindow != null)
+            RunOnUI(() =>
             {
-                _debugLogWindow.Show();
-                _debugLogWindow.Activate();
-                _debugLogWindow.Topmost = true;
-            }
+                if (_debugLogWindow != null)
+                {
+                    _debugLogWindow.Show();
+                    _debugLogWindow.Activate();
+                    _debugLogWindow.Topmost = true;
+                }
+            });
         }
 
         /// <summary>
@@ -99,26 +123,13 @@ namespace Shuyu.Service
         /// </summary>
         public void BringLogWindowToFront()
         {
-            if (_debugLogWindow != null && _debugLogWindow.IsVisible)
+            RunOnUI(() =>
             {
-                _debugLogWindow.BringToAbsoluteFront();
-            }
-        }
-
-        /// <summary>
-        /// 最前面表示維持を開始します
-        /// </summary>
-        public void StartKeepingLogWindowFront()
-        {
-            _debugLogWindow?.StartKeepingFront();
-        }
-
-        /// <summary>
-        /// 最前面表示維持を停止します
-        /// </summary>
-        public void StopKeepingLogWindowFront()
-        {
-            _debugLogWindow?.StopKeepingFront();
+                if (_debugLogWindow != null && _debugLogWindow.IsVisible)
+                {
+                    _debugLogWindow.BringToAbsoluteFront();
+                }
+            });
         }
 
         /// <summary>
@@ -126,7 +137,7 @@ namespace Shuyu.Service
         /// </summary>
         public void HideLogWindow()
         {
-            _debugLogWindow?.Hide();
+            RunOnUI(() => _debugLogWindow?.Hide());
         }
 
         /// <summary>
@@ -134,25 +145,65 @@ namespace Shuyu.Service
         /// </summary>
         public void DisposeLogWindow()
         {
-            _debugLogWindow?.Close();
-            _debugLogWindow = null;
+            RunOnUI(() =>
+            {
+                if (_debugLogWindow != null)
+                {
+                    _debugLogWindow.ForceClose();
+                    _debugLogWindow = null;
+                }
+            });
         }
 
         /// <summary>
-        /// 内部的にログを追加する処理
+        /// 内部的にログを追加する処理（レベルなし")
         /// </summary>
         /// <param name="message">ログメッセージ</param>
         private void AddLogInternal(string message)
         {
-            // UIスレッドでない場合はInvokeで切り替え
-            if (!_dispatcher.CheckAccess())
+            AddLogInternal(LogLevel.None, message);
+        }
+
+        /// <summary>
+        /// 内部的にログを追加する処理（レベル付き）
+        /// </summary>
+        private void AddLogInternal(LogLevel level, string message)
+        {
+            // コンソールにも出力
+            System.Diagnostics.Trace.WriteLine(message);
+
+            // ウィンドウ未初期化時はバッファに積む
+            if (_debugLogWindow == null)
             {
-                _dispatcher.BeginInvoke(new Action<string>(AddLogInternal), message);
+                _pendingLogs.Enqueue((level, message));
                 return;
             }
 
-            // ログウィンドウにメッセージを追加
-            _debugLogWindow?.AddLog(message);
+            // UI スレッドで実行
+            RunOnUI(() =>
+            {
+                if (_debugLogWindow == null)
+                {
+                    _pendingLogs.Enqueue((level, message));
+                    return;
+                }
+
+                switch (level)
+                {
+                    case LogLevel.Info:
+                        _debugLogWindow.AddInfoLog(message);
+                        break;
+                    case LogLevel.Warning:
+                        _debugLogWindow.AddWarningLog(message);
+                        break;
+                    case LogLevel.Error:
+                        _debugLogWindow.AddErrorLog(message);
+                        break;
+                    default:
+                        _debugLogWindow.AddLog(message);
+                        break;
+                }
+            });
         }
 
         // === 静的メソッド（どのクラスからでも呼び出し可能） ===
@@ -172,7 +223,7 @@ namespace Shuyu.Service
         /// <param name="message">情報メッセージ</param>
         public static void LogInfo(string message)
         {
-            Instance.AddLogInternal($"[INFO] {message}");
+            Instance.AddLogInternal(LogLevel.Info, message);
         }
 
         /// <summary>
@@ -181,7 +232,7 @@ namespace Shuyu.Service
         /// <param name="message">警告メッセージ</param>
         public static void LogWarning(string message)
         {
-            Instance.AddLogInternal($"[WARNING] {message}");
+            Instance.AddLogInternal(LogLevel.Warning, message);
         }
 
         /// <summary>
@@ -190,7 +241,7 @@ namespace Shuyu.Service
         /// <param name="message">エラーメッセージ</param>
         public static void LogError(string message)
         {
-            Instance.AddLogInternal($"[ERROR] {message}");
+            Instance.AddLogInternal(LogLevel.Error, message);
         }
 
         /// <summary>
@@ -211,12 +262,12 @@ namespace Shuyu.Service
         /// <param name="context">例外が発生したコンテキスト</param>
         public static void LogException(Exception ex, string context = "")
         {
-            var message = string.IsNullOrEmpty(context) 
+            var message = string.IsNullOrEmpty(context)
                 ? $"[EXCEPTION] {ex.GetType().Name}: {ex.Message}"
                 : $"[EXCEPTION] {context} - {ex.GetType().Name}: {ex.Message}";
-            
+
             Instance.AddLogInternal(message);
-            
+
             // スタックトレースも出力（デバッグビルド時のみ）
 #if DEBUG
             Instance.AddLogInternal($"[STACK] {ex.StackTrace}");
@@ -232,25 +283,6 @@ namespace Shuyu.Service
             foreach (var message in messages)
             {
                 Instance.AddLogInternal(message);
-            }
-        }
-
-        /// <summary>
-        /// フォーマット文字列を使ってログを出力します。
-        /// </summary>
-        /// <param name="format">フォーマット文字列</param>
-        /// <param name="args">フォーマット引数</param>
-        public static void LogFormat(string format, params object[] args)
-        {
-            try
-            {
-                var message = string.Format(format, args);
-                Instance.AddLogInternal(message);
-            }
-            catch (Exception ex)
-            {
-                // フォーマットエラーの場合は元の文字列をそのまま出力
-                Instance.AddLogInternal($"[FORMAT_ERROR] {format} - {ex.Message}");
             }
         }
     }
