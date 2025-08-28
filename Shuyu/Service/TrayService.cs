@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
 using System.Diagnostics;
+using Shuyu.Service; // 追加: PinnedWindowManager 参照
 
 /// <summary>
 /// トレイアイコンと関連する操作（キャプチャ開始、設定表示、終了）を管理するサービスです。
@@ -125,6 +126,13 @@ public class TrayService : IDisposable
 
         // メニュー項目を追加：キャプチャ開始（ホットキー表示付き）
         menu.Items.Add("キャプチャ開始 (Shift+PrintScreen)", null, (s, e) => _onCaptureRequested?.Invoke());
+        
+        // 区切り線を追加
+        menu.Items.Add(new ToolStripSeparator());
+
+        // ピン留め関連
+        menu.Items.Add("ピン留めをすべて削除", null, (s, e) => PinnedWindowManager.CloseAll());
+        menu.Items.Add("ピン留めの表示/非表示を切り替え", null, (s, e) => PinnedWindowManager.ToggleAllVisibility());
         
         // 区切り線を追加
         menu.Items.Add(new ToolStripSeparator());

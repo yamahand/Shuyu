@@ -3,9 +3,11 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Threading;
 using Microsoft.Win32;
+using Shuyu.Service;
 
 namespace Shuyu
 {
@@ -58,6 +60,9 @@ namespace Shuyu
         /// </summary>
         private bool _allowClose = false;
 
+        // 追加: UI 準備完了フラグ
+        private bool _uiReady = false;
+
         /// <summary>
         /// DebugLogWindow の新しいインスタンスを初期化します。
         /// </summary>
@@ -93,8 +98,27 @@ namespace Shuyu
         /// </summary>
         private void DebugLogWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            // ロード後に最前面表示を実行
+            try
+            {
+                var cb = this.FindName("VsOutputCheckBox") as System.Windows.Controls.CheckBox;
+                if (cb != null)
+                {
+                    // 一時的に解除してから状態同期（イベント連鎖によるAddLog発火を防止）
+                    cb.Checked -= VsOutputCheckBox_Checked;
+                    cb.Unchecked -= VsOutputCheckBox_Unchecked;
+
+                    cb.IsChecked = Shuyu.Service.LogService.Instance.OutputToVSOutput;
+
+                    cb.Checked += VsOutputCheckBox_Checked;
+                    cb.Unchecked += VsOutputCheckBox_Unchecked;
+                }
+            }
+            catch { }
+
             BringToAbsoluteFront();
+
+            // ここからログ出力を許可
+            _uiReady = true;
         }
 
         /// <summary>
@@ -180,31 +204,30 @@ namespace Shuyu
         /// <param name="message">追加するログメッセージ</param>
         public void AddLog(string message)
         {
-            // UIスレッドでない場合はInvokeで切り替え
-            if (!_dispatcher.CheckAccess())
+            var disp = _dispatcher ?? Dispatcher.CurrentDispatcher;
+
+            if (!disp.CheckAccess())
             {
-                _dispatcher.BeginInvoke(new Action<string>(AddLog), message);
+                disp.BeginInvoke(new Action<string>(AddLog), message);
                 return;
             }
 
-            // タイムスタンプ付きでログメッセージを作成
             var timestampedMessage = $"[{DateTime.Now:HH:mm:ss.fff}] {message}";
-            
-            // ログバッファに追加
-            _logBuffer.AppendLine(timestampedMessage);
+
+            _logBuffer?.AppendLine(timestampedMessage);
             _currentLogLines++;
-            
-            // 最大行数を超えた場合は古いログを削除
+
             if (_currentLogLines > MaxLogLines)
             {
                 TrimOldLogs();
             }
-            
-            // UIに反映
-            UpdateLogDisplay();
-            
-            // 自動スクロール（最新ログを表示）
-            ScrollToBottom();
+
+            // UI要素が未生成なら描画はスキップ
+            if (LogTextBlock != null)
+                LogTextBlock.Text = _logBuffer?.ToString() ?? string.Empty;
+
+            if (LogScrollViewer != null)
+                LogScrollViewer.ScrollToEnd();
         }
 
         /// <summary>
@@ -359,6 +382,23 @@ namespace Shuyu
         public void AddInfoLog(string message)
         {
             AddLog($"[INFO] {message}");
+        }
+
+        /// <summary>
+        /// VS出力チェックの変更イベント。LogService のフラグを更新します。
+        /// </summary>
+        private void VsOutputCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            Shuyu.Service.LogService.Instance.OutputToVSOutput = true;
+            if (_uiReady && _logBuffer != null)
+                AddLog("[INFO] Visual Studio 出力: 有効");
+        }
+
+        private void VsOutputCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            Shuyu.Service.LogService.Instance.OutputToVSOutput = false;
+            if (_uiReady && _logBuffer != null)
+                AddLog("[INFO] Visual Studio 出力: 無効");
         }
     }
 }

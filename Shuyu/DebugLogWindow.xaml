@@ -1,4 +1,4 @@
-<Window x:Class="Shuyu.DebugLogWindow"
+﻿<Window x:Class="Shuyu.DebugLogWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Shuyu - Debug Log"
@@ -30,19 +30,22 @@
         </ScrollViewer>
         
         <!-- ボタンエリア -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" 
-                    HorizontalAlignment="Right" 
-                    Background="DarkGray"
-                    Margin="5">
-            <Button x:Name="ClearButton" Content="クリア" 
-                    Width="80" Height="30" Margin="5"
-                    Click="ClearButton_Click" />
-            <Button x:Name="SaveButton" Content="保存" 
-                    Width="80" Height="30" Margin="5"
-                    Click="SaveButton_Click" />
-            <Button x:Name="CloseButton" Content="閉じる" 
-                    Width="80" Height="30" Margin="5"
-                    Click="CloseButton_Click" />
-        </StackPanel>
+        <DockPanel Grid.Row="1" LastChildFill="False" Background="DarkGray" Margin="5">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" DockPanel.Dock="Left">
+                <CheckBox x:Name="VsOutputCheckBox" Content="VS出力に書き出す" Margin="5,0,10,0" VerticalAlignment="Center"
+                          IsChecked="True" Checked="VsOutputCheckBox_Checked" Unchecked="VsOutputCheckBox_Unchecked"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" DockPanel.Dock="Right">
+                <Button x:Name="ClearButton" Content="クリア" 
+                        Width="80" Height="30" Margin="5"
+                        Click="ClearButton_Click" />
+                <Button x:Name="SaveButton" Content="保存" 
+                        Width="80" Height="30" Margin="5"
+                        Click="SaveButton_Click" />
+                <Button x:Name="CloseButton" Content="閉じる" 
+                        Width="80" Height="30" Margin="5"
+                        Click="CloseButton_Click" />
+            </StackPanel>
+        </DockPanel>
     </Grid>
 </Window>

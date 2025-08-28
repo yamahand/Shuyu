@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Windows.Threading;
+using System.IO;
+using System.Runtime.CompilerServices;
 
 namespace Shuyu.Service
 {
@@ -42,15 +44,12 @@ namespace Shuyu.Service
         private readonly ConcurrentQueue<(LogLevel Level, string Message)> _pendingLogs = new();
 
         /// <summary>
-        /// プライベートコンストラクタ（シングルトンパターン）
+        /// Visual Studio の出力ウィンドウにも出力するかのフラグ（既定: true）
         /// </summary>
-        private LogService()
-        {
-        }
+        public bool OutputToVSOutput { get; set; } = true;
 
-        /// <summary>
-        /// UI スレッドで処理を実行するヘルパー
-        /// </summary>
+        private LogService() { }
+
         private void RunOnUI(Action action)
         {
             var d = uiDispatcher;
@@ -58,9 +57,6 @@ namespace Shuyu.Service
             else d.BeginInvoke(action);
         }
 
-        /// <summary>
-        /// ログウィンドウを初期化します。MainWindowから呼び出します。
-        /// </summary>
         public void InitializeLogWindow()
         {
             RunOnUI(() =>
@@ -70,14 +66,12 @@ namespace Shuyu.Service
                     _debugLogWindow = new DebugLogWindow();
 #if DEBUG
                     _debugLogWindow.Show();
-                    // 遅延実行で確実に最前面に表示
                     _debugLogWindow.Dispatcher.BeginInvoke(
                         DispatcherPriority.ApplicationIdle,
                         new Action(() => { _debugLogWindow.BringToAbsoluteFront(); }));
 #endif
                 }
 
-                // 保留ログをフラッシュ
                 if (!_pendingLogs.IsEmpty && _debugLogWindow != null)
                 {
                     while (_pendingLogs.TryDequeue(out var item))
@@ -102,9 +96,6 @@ namespace Shuyu.Service
             });
         }
 
-        /// <summary>
-        /// ログウィンドウを表示します。
-        /// </summary>
         public void ShowLogWindow()
         {
             RunOnUI(() =>
@@ -118,9 +109,6 @@ namespace Shuyu.Service
             });
         }
 
-        /// <summary>
-        /// ログウィンドウを最前面に再配置します。
-        /// </summary>
         public void BringLogWindowToFront()
         {
             RunOnUI(() =>
@@ -132,17 +120,8 @@ namespace Shuyu.Service
             });
         }
 
-        /// <summary>
-        /// ログウィンドウを非表示にします。
-        /// </summary>
-        public void HideLogWindow()
-        {
-            RunOnUI(() => _debugLogWindow?.Hide());
-        }
+        public void HideLogWindow() => RunOnUI(() => _debugLogWindow?.Hide());
 
-        /// <summary>
-        /// ログウィンドウを破棄します。
-        /// </summary>
         public void DisposeLogWindow()
         {
             RunOnUI(() =>
@@ -155,22 +134,15 @@ namespace Shuyu.Service
             });
         }
 
-        /// <summary>
-        /// 内部的にログを追加する処理（レベルなし")
-        /// </summary>
-        /// <param name="message">ログメッセージ</param>
-        private void AddLogInternal(string message)
-        {
-            AddLogInternal(LogLevel.None, message);
-        }
+        private void AddLogInternal(string message) => AddLogInternal(LogLevel.None, message);
 
-        /// <summary>
-        /// 内部的にログを追加する処理（レベル付き）
-        /// </summary>
         private void AddLogInternal(LogLevel level, string message)
         {
-            // コンソールにも出力
-            System.Diagnostics.Trace.WriteLine(message);
+            // Visual Studio の出力ウィンドウへも出力（有効時）
+            if (OutputToVSOutput)
+            {
+                System.Diagnostics.Trace.WriteLine(message);
+            }
 
             // ウィンドウ未初期化時はバッファに積む
             if (_debugLogWindow == null)
@@ -179,7 +151,6 @@ namespace Shuyu.Service
                 return;
             }
 
-            // UI スレッドで実行
             RunOnUI(() =>
             {
                 if (_debugLogWindow == null)
@@ -206,78 +177,67 @@ namespace Shuyu.Service
             });
         }
 
+        // 呼び出し元情報付きでメッセージ整形
+        private static string WithCaller(string message, string filePath, int lineNumber)
+        {
+            var file = string.IsNullOrEmpty(filePath) ? "?" : Path.GetFileName(filePath);
+            return $"[{file}:{lineNumber}] {message}";
+        }
+
         // === 静的メソッド（どのクラスからでも呼び出し可能） ===
 
-        /// <summary>
-        /// 一般的なログメッセージを出力します。
-        /// </summary>
-        /// <param name="message">ログメッセージ</param>
-        public static void Log(string message)
+        public static void Log(string message,
+            [CallerFilePath] string filePath = "",
+            [CallerLineNumber] int lineNumber = 0)
         {
-            Instance.AddLogInternal(message);
+            Instance.AddLogInternal(WithCaller(message, filePath, lineNumber));
         }
 
-        /// <summary>
-        /// 情報レベルのログを出力します。
-        /// </summary>
-        /// <param name="message">情報メッセージ</param>
-        public static void LogInfo(string message)
+        public static void LogInfo(string message,
+            [CallerFilePath] string filePath = "",
+            [CallerLineNumber] int lineNumber = 0)
         {
-            Instance.AddLogInternal(LogLevel.Info, message);
+            Instance.AddLogInternal(LogLevel.Info, WithCaller(message, filePath, lineNumber));
         }
 
-        /// <summary>
-        /// 警告レベルのログを出力します。
-        /// </summary>
-        /// <param name="message">警告メッセージ</param>
-        public static void LogWarning(string message)
+        public static void LogWarning(string message,
+            [CallerFilePath] string filePath = "",
+            [CallerLineNumber] int lineNumber = 0)
         {
-            Instance.AddLogInternal(LogLevel.Warning, message);
+            Instance.AddLogInternal(LogLevel.Warning, WithCaller(message, filePath, lineNumber));
         }
 
-        /// <summary>
-        /// エラーレベルのログを出力します。
-        /// </summary>
-        /// <param name="message">エラーメッセージ</param>
-        public static void LogError(string message)
+        public static void LogError(string message,
+            [CallerFilePath] string filePath = "",
+            [CallerLineNumber] int lineNumber = 0)
         {
-            Instance.AddLogInternal(LogLevel.Error, message);
+            Instance.AddLogInternal(LogLevel.Error, WithCaller(message, filePath, lineNumber));
         }
 
-        /// <summary>
-        /// デバッグレベルのログを出力します（DEBUGビルド時のみ）。
-        /// </summary>
-        /// <param name="message">デバッグメッセージ</param>
-        public static void LogDebug(string message)
+        public static void LogDebug(string message,
+            [CallerFilePath] string filePath = "",
+            [CallerLineNumber] int lineNumber = 0)
         {
 #if DEBUG
-            Instance.AddLogInternal($"[DEBUG] {message}");
+            Instance.AddLogInternal(WithCaller($"[DEBUG] {message}", filePath, lineNumber));
 #endif
         }
 
-        /// <summary>
-        /// 例外の詳細ログを出力します。
-        /// </summary>
-        /// <param name="ex">例外オブジェクト</param>
-        /// <param name="context">例外が発生したコンテキスト</param>
-        public static void LogException(Exception ex, string context = "")
+        public static void LogException(Exception ex, string context = "",
+            [CallerFilePath] string filePath = "",
+            [CallerLineNumber] int lineNumber = 0)
         {
-            var message = string.IsNullOrEmpty(context)
-                ? $"[EXCEPTION] {ex.GetType().Name}: {ex.Message}"
-                : $"[EXCEPTION] {context} - {ex.GetType().Name}: {ex.Message}";
+            var core = string.IsNullOrEmpty(context)
+                ? $"{ex.GetType().Name}: {ex.Message}"
+                : $"{context} - {ex.GetType().Name}: {ex.Message}";
 
-            Instance.AddLogInternal(message);
+            Instance.AddLogInternal(WithCaller($"[EXCEPTION] {core}", filePath, lineNumber));
 
-            // スタックトレースも出力（デバッグビルド時のみ）
 #if DEBUG
-            Instance.AddLogInternal($"[STACK] {ex.StackTrace}");
+            Instance.AddLogInternal(WithCaller($"[STACK] {ex.StackTrace}", filePath, lineNumber));
 #endif
         }
 
-        /// <summary>
-        /// 複数のログメッセージを一度に出力します。
-        /// </summary>
-        /// <param name="messages">ログメッセージの配列</param>
         public static void LogMultiple(params string[] messages)
         {
             foreach (var message in messages)
