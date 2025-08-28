@@ -2,6 +2,7 @@
 using System.IO;
 using System.Text.Json;
 using System.Diagnostics;
+using Shuyu.Service;
 
 namespace Shuyu
 {
@@ -43,7 +44,7 @@ namespace Shuyu
             catch (Exception ex)
             {
 #if DEBUG
-                Debug.WriteLine($"[Shuyu] UserSettingsStore.Load error: {ex}");
+                LogService.LogException(ex, "UserSettingsStore.Load");
 #endif
                 return new UserSettings();
             }
@@ -66,7 +67,7 @@ namespace Shuyu
             catch (Exception ex)
             {
 #if DEBUG
-                Debug.WriteLine($"[Shuyu] UserSettingsStore.Save error: {ex}");
+                LogService.LogException(ex, "UserSettingsStore.Save");
 #endif
             }
         }

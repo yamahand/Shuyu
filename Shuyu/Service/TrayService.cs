@@ -176,7 +176,7 @@ public class TrayService : IDisposable
         catch (InvalidOperationException e)
         {
             // MainWindow が存在しない場合は無視
-            Debug.WriteLine($"[Shuyu] Unable to set SettingsWindow owner: {e}");
+            LogService.LogException(e, "TrayService: Unable to set SettingsWindow owner");
         }
 
         // モーダルダイアログとして表示

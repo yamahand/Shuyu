@@ -5,6 +5,7 @@ using System.Windows.Interop;
 using System.Diagnostics.CodeAnalysis;
 using System.Windows.Forms;
 using System.Diagnostics;
+using Shuyu.Service;
 
 namespace Shuyu
 {
@@ -83,7 +84,7 @@ namespace Shuyu
                 if (!ok)
                 {
                     // デバッグビルド時はエラー情報を出力
-                    Debug.WriteLine($"[HotkeyManager] RegisterHotKey failed. Err={Marshal.GetLastWin32Error()}");
+                    LogService.LogWarning($"[HotkeyManager] RegisterHotKey failed. Err={Marshal.GetLastWin32Error()}");
                 }
 #endif
                 return ok;
@@ -130,7 +131,7 @@ namespace Shuyu
                     _keyboardHookId = SetWindowsHookEx(_whKeyboardLl, _keyboardProc, module, 0);
 #if DEBUG
                     if (_keyboardHookId == IntPtr.Zero)
-                        Debug.WriteLine("[HotkeyManager] Install hook failed: " + Marshal.GetLastWin32Error());
+                        LogService.LogError("[HotkeyManager] Install hook failed: " + Marshal.GetLastWin32Error());
 #endif
                     // フラグを更新
                     useLowLevelHook = true;
@@ -138,7 +139,7 @@ namespace Shuyu
                 catch (Exception ex)
                 {
 #if DEBUG
-                    Debug.WriteLine("[HotkeyManager] InstallLowLevelHook exception: " + ex);
+                    LogService.LogException(ex, "[HotkeyManager] InstallLowLevelHook exception");
 #endif
                 }
             }
@@ -156,7 +157,7 @@ namespace Shuyu
                     // Win32 API でフックを解除
                     var ok = UnhookWindowsHookEx(_keyboardHookId);
 #if DEBUG
-                    if (!ok) Debug.WriteLine("[HotkeyManager] UnhookWindowsHookEx failed: " + Marshal.GetLastWin32Error());
+                    if (!ok) LogService.LogError("[HotkeyManager] UnhookWindowsHookEx failed: " + Marshal.GetLastWin32Error());
 #endif
                     // ハンドルとデリゲートをクリア
                     _keyboardHookId = IntPtr.Zero;
@@ -280,7 +281,7 @@ namespace Shuyu
             catch (Exception ex)
             {
 #if DEBUG
-                Debug.WriteLine("[HotkeyManager] HookCallback exception: " + ex);
+                LogService.LogException(ex, "[HotkeyManager] HookCallback exception");
 #endif
             }
             
