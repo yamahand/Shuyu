@@ -123,10 +123,18 @@ namespace Shuyu
 
             if (dlg.ShowDialog(this) == true)
             {
+                // セキュリティ検証を追加
+                if (!SecurityHelper.IsValidFilePath(dlg.FileName))
+                {
+                    LogService.LogWarning($"無効なファイルパスが指定されました: {SecurityHelper.SanitizeLogMessage(dlg.FileName)}");
+                    System.Windows.MessageBox.Show(this, "指定されたファイルパスは無効です。", "エラー", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
                 try
                 {
                     SaveImage(dlg.FileName);
-                    LogService.LogInfo($"画像を保存しました: {dlg.FileName}");
+                    LogService.LogInfo($"画像を保存しました: {SecurityHelper.SanitizeLogMessage(dlg.FileName)}");
                 }
                 catch (Exception ex)
                 {

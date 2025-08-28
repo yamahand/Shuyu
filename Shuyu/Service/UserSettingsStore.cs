@@ -22,8 +22,7 @@ namespace Shuyu
     /// </summary>
     internal static class UserSettingsStore
     {
-        private static readonly string _appDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Shuyu");
-        private static readonly string _filePath = Path.Combine(_appDir, "settings.json");
+        private static readonly string _filePath = SecurityHelper.GetSafeSettingsPath();
 
         /// <summary>
         /// 設定ファイルからユーザー設定を読み込みます。ファイルが存在しない場合はデフォルト設定を返します。
@@ -33,10 +32,10 @@ namespace Shuyu
         {
             try
             {
-                if (!File.Exists(_filePath))
+                var json = SecurityHelper.SafeReadSettingsFile(_filePath);
+                if (string.IsNullOrEmpty(json))
                     return new UserSettings();
 
-                var json = File.ReadAllText(_filePath);
                 var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                 var s = JsonSerializer.Deserialize<UserSettings>(json, opts);
                 return s ?? new UserSettings();
@@ -45,6 +44,8 @@ namespace Shuyu
             {
 #if DEBUG
                 LogService.LogException(ex, "UserSettingsStore.Load");
+#else
+                LogService.LogWarning($"設定ファイル読み込みエラー: {SecurityHelper.SanitizeLogMessage(ex.Message)}");
 #endif
                 return new UserSettings();
             }
@@ -58,16 +59,18 @@ namespace Shuyu
         {
             try
             {
-                Directory.CreateDirectory(_appDir);
-                var tmp = _filePath + ".tmp";
                 var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(tmp, json);
-                File.Move(tmp, _filePath, true);
+                if (!SecurityHelper.SafeWriteSettingsFile(_filePath, json))
+                {
+                    LogService.LogError("設定ファイルの保存に失敗しました");
+                }
             }
             catch (Exception ex)
             {
 #if DEBUG
                 LogService.LogException(ex, "UserSettingsStore.Save");
+#else
+                LogService.LogError($"設定保存エラー: {SecurityHelper.SanitizeLogMessage(ex.Message)}");
 #endif
             }
         }

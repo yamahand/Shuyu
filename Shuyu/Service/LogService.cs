@@ -181,7 +181,8 @@ namespace Shuyu.Service
         private static string WithCaller(string message, string filePath, int lineNumber)
         {
             var file = string.IsNullOrEmpty(filePath) ? "?" : Path.GetFileName(filePath);
-            return $"[{file}:{lineNumber}] {message}";
+            var sanitizedMessage = SecurityHelper.SanitizeLogMessage(message);
+            return $"[{file}:{lineNumber}] {sanitizedMessage}";
         }
 
         // === 静的メソッド（どのクラスからでも呼び出し可能） ===
@@ -231,10 +232,14 @@ namespace Shuyu.Service
                 ? $"{ex.GetType().Name}: {ex.Message}"
                 : $"{context} - {ex.GetType().Name}: {ex.Message}";
 
-            Instance.AddLogInternal(WithCaller($"[EXCEPTION] {core}", filePath, lineNumber));
-
+            // リリースビルドでは例外の詳細なスタックトレースを制限
 #if DEBUG
-            Instance.AddLogInternal(WithCaller($"[STACK] {ex.StackTrace}", filePath, lineNumber));
+            Instance.AddLogInternal(LogLevel.Error, WithCaller($"[EXCEPTION] {core}", filePath, lineNumber));
+            Instance.AddLogInternal(LogLevel.Error, WithCaller($"[STACK] {ex.StackTrace}", filePath, lineNumber));
+#else
+            // リリースビルドではサニタイズされたメッセージのみ
+            var sanitizedMessage = SecurityHelper.SanitizeLogMessage(core);
+            Instance.AddLogInternal(LogLevel.Error, $"[{Path.GetFileName(filePath)}:{lineNumber}] [EXCEPTION] {sanitizedMessage}");
 #endif
         }
 
