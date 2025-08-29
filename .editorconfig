@@ -251,6 +251,11 @@ dotnet_naming_rule.public_or_protected_field_should_be_begins_with___camel_case.
 dotnet_naming_rule.public_or_protected_field_should_be_begins_with___camel_case.symbols = public_or_protected_field
 dotnet_naming_rule.public_or_protected_field_should_be_begins_with___camel_case.style = begins_with___camel_case
 
+dotnet_naming_rule.const_field_should_be_pascal_case.severity = warning
+dotnet_naming_rule.const_field_should_be_pascal_case.symbols = const_field
+dotnet_naming_rule.const_field_should_be_pascal_case.style = pascal_case
+
+
 # 記号の仕様
 
 dotnet_naming_symbols.class.applicable_kinds = class
@@ -296,6 +301,10 @@ dotnet_naming_symbols.types.required_modifiers =
 dotnet_naming_symbols.public_field.applicable_kinds = field
 dotnet_naming_symbols.public_field.applicable_accessibilities = public
 dotnet_naming_symbols.public_field.required_modifiers = 
+
+dotnet_naming_symbols.const_field.applicable_kinds = field
+dotnet_naming_symbols.const_field.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
+dotnet_naming_symbols.const_field.required_modifiers = const
 
 # 命名スタイル
 
