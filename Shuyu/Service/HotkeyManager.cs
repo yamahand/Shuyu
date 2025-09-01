@@ -45,13 +45,13 @@ namespace Shuyu
         private readonly object _lock = new object();
 
         // 定数 (命名規則に合わせて _camelCase )
-        private const int _wmHotkey = 0x0312;          // WM_HOTKEY メッセージ
-        private const int _hotkeyId = 0x9000;          // ホットキーの識別ID
-        private const uint _modShift = 0x0004;         // Shift モディファイア
-        private const uint _vkSnapshot = 0x2C;         // PrintScreen キーの仮想キーコード
-        private const int _whKeyboardLl = 13;          // WH_KEYBOARD_LL (低レベルキーボードフック)
-        private const int _wmKeydown = 0x0100;         // WM_KEYDOWN メッセージ
-        private const int _wmSysKeydown = 0x0104;      // WM_SYSKEYDOWN メッセージ
+        private const int WmHotkey = 0x0312;          // WM_HOTKEY メッセージ
+        private const int HotkeyId = 0x9000;          // ホットキーの識別ID
+        private const uint ModShift = 0x0004;         // Shift モディファイア
+        private const uint VkSnapshot = 0x2C;         // PrintScreen キーの仮想キーコード
+        private const int WhKeyboardLl = 13;          // WH_KEYBOARD_LL (低レベルキーボードフック)
+        private const int WmKeydown = 0x0100;         // WM_KEYDOWN メッセージ
+        private const int WmSysKeydown = 0x0104;      // WM_SYSKEYDOWN メッセージ
 
         /// <summary>
         /// 低レベルフックが現在有効かどうかを示します。
@@ -79,7 +79,7 @@ namespace Shuyu
                 // メッセージウィンドウが未作成の場合は作成
                 EnsureMessageWindow();
                 // Win32 API でホットキーを登録（Shift + PrintScreen）
-                var ok = RegisterHotKey(_hwndSource!.Handle, _hotkeyId, _modShift, _vkSnapshot);
+                var ok = RegisterHotKey(_hwndSource!.Handle, HotkeyId, ModShift, VkSnapshot);
 #if DEBUG
                 if (!ok)
                 {
@@ -101,7 +101,7 @@ namespace Shuyu
                 if (_hwndSource != null)
                 {
                     // Win32 API でホットキーの登録を解除
-                    _ = UnregisterHotKey(_hwndSource.Handle, _hotkeyId);
+                    _ = UnregisterHotKey(_hwndSource.Handle, HotkeyId);
                     // メッセージフックを解除
                     _hwndSource.RemoveHook(WndProc);
                     // ウィンドウソースを破棄
@@ -128,7 +128,7 @@ namespace Shuyu
                     // 現在のプロセスのモジュールハンドルを取得
                     IntPtr module = GetModuleHandle(Process.GetCurrentProcess().MainModule?.ModuleName ?? string.Empty);
                     // 低レベルキーボードフックをインストール
-                    _keyboardHookId = SetWindowsHookEx(_whKeyboardLl, _keyboardProc, module, 0);
+                    _keyboardHookId = SetWindowsHookEx(WhKeyboardLl, _keyboardProc, module, 0);
 #if DEBUG
                     if (_keyboardHookId == IntPtr.Zero)
                         LogService.LogError("[HotkeyManager] Install hook failed: " + Marshal.GetLastWin32Error());
@@ -221,7 +221,7 @@ namespace Shuyu
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
             // WM_HOTKEY メッセージかつ登録したホットキーIDの場合
-            if (msg == _wmHotkey && wParam.ToInt32() == _hotkeyId)
+            if (msg == WmHotkey && wParam.ToInt32() == HotkeyId)
             {
                 // ホットキー押下イベントをポスト
                 PostHotkeyEvent();
@@ -256,13 +256,13 @@ namespace Shuyu
             try
             {
                 // フックチェーンの処理が必要で、キーダウンメッセージの場合
-                if (nCode >= 0 && (wParam == (IntPtr)_wmKeydown || wParam == (IntPtr)_wmSysKeydown))
+                if (nCode >= 0 && (wParam == (IntPtr)WmKeydown || wParam == (IntPtr)WmSysKeydown))
                 {
                     // lParam から仮想キーコードを取得
                     int vk = Marshal.ReadInt32(lParam);
                     
                     // PrintScreen キーが押された場合
-                    if (vk == (int)_vkSnapshot)
+                    if (vk == (int)VkSnapshot)
                     {
                         // Shift キーが同時に押されているかチェック
                         short s = GetAsyncKeyState((int)Keys.ShiftKey);

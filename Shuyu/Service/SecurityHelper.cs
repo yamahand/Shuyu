@@ -1,5 +1,6 @@
-using System;
+﻿using System;
 using System.IO;
+using System.Security; // SecurityException 用
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -132,8 +133,9 @@ namespace Shuyu.Service
             // ファイルパスの一部を隠す
             sanitized = Regex.Replace(sanitized, @"[A-Za-z]:\\[^\\]*\\", @"<PATH>\", RegexOptions.IgnoreCase);
             
-            // 環境変数やユーザー名を隠す
-            sanitized = Regex.Replace(sanitized, Environment.UserName, "<USER>", StringComparison.OrdinalIgnoreCase);
+            // 環境変数やユーザー名を隠す（ユーザー名は正規表現エスケープ + 大文字小文字無視）
+            var escapedUser = Regex.Escape(Environment.UserName);
+            sanitized = Regex.Replace(sanitized, escapedUser, "<USER>", RegexOptions.IgnoreCase);
             
             // 長すぎるメッセージを切り詰める
             if (sanitized.Length > 500)

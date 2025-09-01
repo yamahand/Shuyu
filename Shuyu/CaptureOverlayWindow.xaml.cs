@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Drawing;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -17,12 +19,17 @@ namespace Shuyu
     /// <summary>
     /// キャプチャオーバーレイウィンドウ。仮想スクリーン全体をキャプチャして表示し、矩形選択を可能にします。
     /// </summary>
-    public partial class CaptureOverlayWindow : Window
+    public partial class CaptureOverlayWindow : Window, IDisposable
     {
         /// <summary>
-        /// キャプチャした画面全体のビットマップ（ピクセル単位）
+        /// 非同期画面キャプチャサービス
         /// </summary>
-        private System.Drawing.Bitmap? _capturedBitmap;
+        private readonly AsyncScreenCaptureService _captureService;
+
+        /// <summary>
+        /// キャンセレーショントークンソース
+        /// </summary>
+        private readonly CancellationTokenSource _cancellationTokenSource;
 
         /// <summary>
         /// マウス選択の開始点（WPF座標系、DIP単位）
@@ -30,17 +37,24 @@ namespace Shuyu
         private System.Windows.Point _startPoint;
 
         /// <summary>
-        /// 選択領域のジオメトリ（現在未使用）
-        /// </summary>
-        private RectangleGeometry _selectionGeometry;
-
-        /// <summary>
         /// 選択範囲を表示する矩形図形（シアン色の枠線）
         /// </summary>
-        private System.Windows.Shapes.Rectangle _selectionRect;
+        private System.Windows.Shapes.Rectangle _selectionRect = null!; // CS8618 回避
 
-        // クラスメンバに追加（開始スクリーン座標(px)）
+        /// <summary>
+        /// 開始スクリーン座標(px)
+        /// </summary>
         private System.Drawing.Point _startScreenPx;
+
+        /// <summary>
+        /// キャプチャ完了フラグ
+        /// </summary>
+        private bool _captureCompleted;
+
+        /// <summary>
+        /// リソース解放フラグ
+        /// </summary>
+        private bool _disposed;
 
         /// <summary>
         /// CaptureOverlayWindow の新しいインスタンスを初期化します。
@@ -48,6 +62,10 @@ namespace Shuyu
         public CaptureOverlayWindow()
         {
             InitializeComponent();
+
+            // サービスとキャンセレーショントークンの初期化
+            _captureService = new AsyncScreenCaptureService();
+            _cancellationTokenSource = new CancellationTokenSource();
 
             LogService.LogDebug("CaptureOverlayWindow を初期化しています");
 
@@ -57,84 +75,133 @@ namespace Shuyu
             LogService.LogInfo("デバッグモード: CaptureOverlayWindowのTopmostをfalseに設定");
 #endif
 
-            // 選択領域のジオメトリを初期化（現在未使用）
-            _selectionGeometry = new RectangleGeometry();
+            InitializeUI();
+            SetupWindowBounds();
+        }
 
+        /// <summary>
+        /// UIコンポーネントを初期化します
+        /// </summary>
+        private void InitializeUI()
+        {
             // 選択矩形の見た目を設定（シアン色の枠線、半透明の黒い背景）
             _selectionRect = new System.Windows.Shapes.Rectangle
             {
                 Stroke = System.Windows.Media.Brushes.Cyan,        // 枠線色：シアン
                 StrokeThickness = 2,                               // 枠線の太さ：2px
                 Fill = new System.Windows.Media.SolidColorBrush(   // 塗りつぶし：半透明の黒
-                    System.Windows.Media.Color.FromArgb(50, 0, 0, 0))
+                    System.Windows.Media.Color.FromArgb(50, 0, 0, 0)),
+                Visibility = Visibility.Hidden // 初期状態では非表示
             };
             // キャンバスに選択矩形を追加
             SelectionCanvas.Children.Add(_selectionRect);
 
             // フォーカスを確保して Esc キーを受け取れるようにする設定
             this.Focusable = true;
-            this.Loaded += (s, e) =>
-            {
-                // ウィンドウをアクティブ化してキーボードフォーカスを設定
-                this.Activate();
-                System.Windows.Input.Keyboard.Focus(this);
-                LogService.LogDebug("CaptureOverlayWindow がアクティブ化されました");
-            };
+            this.Loaded += OnWindowLoaded;
+            this.Closing += OnWindowClosing;
+            
             // Escape キー押下イベントを登録
             this.PreviewKeyDown += CaptureOverlayWindow_PreviewKeyDown;
-
-            // フル仮想スクリーンに合わせてウィンドウサイズと位置を設定（DIP単位）
-            // 注意：DPI差がある環境では調整が必要
-            this.Left = SystemParameters.VirtualScreenLeft;     // 仮想スクリーンの左端
-            this.Top = SystemParameters.VirtualScreenTop;       // 仮想スクリーンの上端
-            this.Width = SystemParameters.VirtualScreenWidth;   // 仮想スクリーンの幅
-            this.Height = SystemParameters.VirtualScreenHeight; // 仮想スクリーンの高さ
-
-            LogService.LogInfo($"ウィンドウサイズ設定: ({this.Left}, {this.Top}, {this.Width}, {this.Height})");
         }
 
         /// <summary>
-        /// キャプチャを開始し、オーバーレイに表示します。
+        /// ウィンドウサイズと位置を設定します
         /// </summary>
-        public void StartCaptureAndShow()
+        private void SetupWindowBounds()
         {
-            LogService.LogInfo("画面キャプチャを開始します");
+            // 座標変換ユーティリティを使用して仮想スクリーン情報を取得
+            var virtualScreen = CoordinateTransformation.GetVirtualScreenInfo();
+            var currentDpi = CoordinateTransformation.GetCurrentCursorDpi();
+            
+            // スクリーン座標をDIPに変換
+            var (leftDip, topDip) = CoordinateTransformation.ScreenPixelToDip(
+                virtualScreen.Left, virtualScreen.Top, currentDpi);
+            var (widthDip, heightDip) = CoordinateTransformation.ScreenPixelToDip(
+                virtualScreen.Width, virtualScreen.Height, currentDpi);
 
-            // 仮想スクリーン全体をキャプチャ
-            CaptureVirtualScreen();
-            if (_capturedBitmap != null)
-            {
-                // キャプチャした画像をWPFのImageコントロールに表示
-                PreviewImage.Source = BitmapToImageSource(_capturedBitmap);
-                LogService.LogInfo($"キャプチャ完了: {_capturedBitmap.Width}x{_capturedBitmap.Height} ピクセル");
-            }
-            else
-            {
-                LogService.LogError("画面キャプチャに失敗しました");
-            }
+            this.Left = leftDip;
+            this.Top = topDip;
+            this.Width = widthDip;
+            this.Height = heightDip;
+
+            LogService.LogInfo($"ウィンドウサイズ設定 (DIP): ({leftDip:F1}, {topDip:F1}, {widthDip:F1}, {heightDip:F1})");
         }
 
         /// <summary>
-        /// 仮想スクリーン全体をキャプチャします。
+        /// ウィンドウロード時の処理
         /// </summary>
-        private void CaptureVirtualScreen()
+        private void OnWindowLoaded(object sender, RoutedEventArgs e)
         {
-            // 仮想スクリーンの範囲を取得（ピクセル単位のRectangle）
-            var vs = SystemInformation.VirtualScreen;
+            // ウィンドウをアクティブ化してキーボードフォーカスを設定
+            this.Activate();
+            System.Windows.Input.Keyboard.Focus(this);
+            LogService.LogDebug("CaptureOverlayWindow がアクティブ化されました");
+        }
 
-            // 既存のビットマップがあれば破棄
-            _capturedBitmap?.Dispose();
+        /// <summary>
+        /// ウィンドウクローズ時の処理
+        /// </summary>
+        private void OnWindowClosing(object? sender, System.ComponentModel.CancelEventArgs e) // CS8622 対応
+        {
+            // 非同期処理をキャンセル
+            _cancellationTokenSource?.Cancel();
+        }
 
-            // 仮想スクリーン全体のサイズでビットマップを作成（32bit ARGB形式）
-            _capturedBitmap = new System.Drawing.Bitmap(vs.Width, vs.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-
-            // Graphics オブジェクトを使って画面をコピー
-            using (var g = System.Drawing.Graphics.FromImage(_capturedBitmap))
+        /// <summary>
+        /// キャプチャを非同期で開始し、オーバーレイに表示します。
+        /// </summary>
+        public async void StartCaptureAndShow()
+        {
+            if (_disposed)
             {
-                // 仮想スクリーン全体をビットマップにコピー
-                g.CopyFromScreen(vs.Left, vs.Top, 0, 0, new System.Drawing.Size(vs.Width, vs.Height), System.Drawing.CopyPixelOperation.SourceCopy);
+                LogService.LogWarning("オーバーレイウィンドウは既に破棄されています");
+                return;
+            }
+
+            try
+            {
+                LogService.LogInfo("非同期画面キャプチャを開始します");
+                
+                // プログレスレポーターを設定
+                var progress = new AsyncScreenCaptureService.ProgressReporter((percentage, message) =>
+                {
+                    // UIスレッドでプログレスを更新
+                    Dispatcher.Invoke(() =>
+                    {
+                        // プログレスバーやステータスラベルがあれば更新
+                        LogService.LogDebug($"キャプチャ進行状況: {percentage}% - {message}");
+                    });
+                });
+
+                // 非同期でフルスクリーンキャプチャを実行
+                var result = await _captureService.CaptureFullScreenAsync(progress, _cancellationTokenSource.Token);
+                
+                if (result.IsSuccess && result.BitmapSource != null)
+                {
+                    // UIスレッドで画像を表示
+                    Dispatcher.Invoke(() =>
+                    {
+                        PreviewImage.Source = result.BitmapSource;
+                        _captureCompleted = true;
+                        LogService.LogInfo($"非同期キャプチャ完了: {result.BitmapSource.PixelWidth}x{result.BitmapSource.PixelHeight}");
+                    });
+                }
+                else
+                {
+                    LogService.LogError($"非同期画面キャプチャに失敗しました: {result.ErrorMessage}");
+                    
+                    // エラー時はウィンドウを閉じる
+                    Dispatcher.Invoke(() => this.Close());
+                }
+            }
+            catch (Exception ex)
+            {
+                LogService.LogException(ex, "非同期キャプチャエラー");
+                Dispatcher.Invoke(() => this.Close());
             }
         }
+
 
         /// <summary>
         /// マウス左ボタンが押されたときの処理。選択開始点を記録し、マウスキャプチャを開始します。
@@ -143,21 +210,27 @@ namespace Shuyu
         /// <param name="e">マウスイベント引数。</param>
         private void SelectionCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            // キャプチャが完了していない場合は選択を禁止
+            if (!_captureCompleted)
+            {
+                LogService.LogInfo("キャプチャがまだ完了していません");
+                return;
+            }
+
             // マウス押下位置を選択開始点として記録（キャンバス座標系）
             _startPoint = e.GetPosition(SelectionCanvas);
+            _startScreenPx = System.Windows.Forms.Cursor.Position;
 
-            LogService.LogInfo($"Selection started at {_startPoint}");
+            LogService.LogInfo($"選択開始: Canvas({_startPoint.X:F1}, {_startPoint.Y:F1}) Screen({_startScreenPx.X}, {_startScreenPx.Y})");
 
-            // 選択矩形を開始点に配置（幅・高さは0で初期化）
+            // 選択矩形を表示し、開始点に配置
+            _selectionRect.Visibility = Visibility.Visible;
             Canvas.SetLeft(_selectionRect, _startPoint.X);
             Canvas.SetTop(_selectionRect, _startPoint.Y);
             _selectionRect.Width = 0;
             _selectionRect.Height = 0;
 
-            // 追加: マウスの仮想スクリーン座標(px)を保存
-            _startScreenPx = System.Windows.Forms.Cursor.Position;
-
-            // マウスキャプチャを開始（ウィンドウ外にマウスが出ても追跡可能）
+            // マウスキャプチャを開始
             SelectionCanvas.CaptureMouse();
         }
 
@@ -168,269 +241,131 @@ namespace Shuyu
         /// <param name="e">マウスイベント引数。</param>
         private void SelectionCanvas_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
         {
-            // マウスがキャプチャされている（ドラッグ中）場合のみ処理
-            if (SelectionCanvas.IsMouseCaptured)
+            // マウスがキャプチャされている（ドラッグ中）かつキャプチャ完了している場合のみ処理
+            if (SelectionCanvas.IsMouseCaptured && _captureCompleted)
             {
                 // 現在のマウス位置を取得
-                var p = e.GetPosition(SelectionCanvas);
+                var currentPoint = e.GetPosition(SelectionCanvas);
 
                 // 開始点と現在点から矩形の左上座標と幅・高さを計算
-                var x = Math.Min(p.X, _startPoint.X);           // 左端のX座標
-                var y = Math.Min(p.Y, _startPoint.Y);           // 上端のY座標
-                var w = Math.Abs(p.X - _startPoint.X);          // 幅（絶対値）
-                var h = Math.Abs(p.Y - _startPoint.Y);          // 高さ（絶対値）
+                var left = Math.Min(currentPoint.X, _startPoint.X);
+                var top = Math.Min(currentPoint.Y, _startPoint.Y);
+                var width = Math.Abs(currentPoint.X - _startPoint.X);
+                var height = Math.Abs(currentPoint.Y - _startPoint.Y);
 
                 // 選択矩形の位置とサイズを更新
-                Canvas.SetLeft(_selectionRect, x);
-                Canvas.SetTop(_selectionRect, y);
-                _selectionRect.Width = w;
-                _selectionRect.Height = h;
+                Canvas.SetLeft(_selectionRect, left);
+                Canvas.SetTop(_selectionRect, top);
+                _selectionRect.Width = width;
+                _selectionRect.Height = height;
             }
         }
 
         /// <summary>
-        /// マウス左ボタンが離されたときの処理。選択を完了し、切り抜き処理を実行してウィンドウを閉じます。
+        /// マウス左ボタンが離されたときの処理。選択を完了し、非同期で切り抜き処理を実行してウィンドウを閉じます。
         /// </summary>
         /// <param name="sender">イベント送信者。</param>
         /// <param name="e">マウスイベント引数。</param>
-        private void SelectionCanvas_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        private async void SelectionCanvas_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            if (!SelectionCanvas.IsMouseCaptured) return;
+            if (!SelectionCanvas.IsMouseCaptured || !_captureCompleted) return;
+            
             SelectionCanvas.ReleaseMouseCapture();
-
-            // 終了時のスクリーン座標(px)
-            var endScreenPx = System.Windows.Forms.Cursor.Position;
-
-            // 仮想スクリーン原点(左上)のpxを取得
-            var vs = System.Windows.Forms.SystemInformation.VirtualScreen;
-
-            // 表示位置（画面絶対px）
-            int screenLeftPx = Math.Min(_startScreenPx.X, endScreenPx.X);
-            int screenTopPx = Math.Min(_startScreenPx.Y, endScreenPx.Y);
-            int width = Math.Abs(endScreenPx.X - _startScreenPx.X);
-            int height = Math.Abs(endScreenPx.Y - _startScreenPx.Y);
-
-            LogService.LogInfo($"Selection ended at screen(px): {screenLeftPx}, {screenTopPx}, width: {width}, height: {height}");
-
-            // 画像内（ビットマップ相対px）に変換（0,0 = VirtualScreen.Left/Top）
-            int leftPxImg = screenLeftPx - vs.Left;
-            int topPxImg = screenTopPx - vs.Top;
-            var rectBitmapPx = new System.Drawing.Rectangle(leftPxImg, topPxImg, width, height);
-
-            LogService.LogInfo($"Final selection rectangle(img px): {rectBitmapPx.X}, {rectBitmapPx.Y}, {rectBitmapPx.Width}, {rectBitmapPx.Height}");
-
-            if (rectBitmapPx.Width > 0 && rectBitmapPx.Height > 0)
-            {
-                CropAndPin(rectBitmapPx, screenLeftPx, screenTopPx);
-            }
-
-            this.Close();
-        }
-
-        // キャンバス座標(DIP)2点 → 仮想スクリーン基準(px)矩形
-        private System.Drawing.Rectangle ToPixelRect(System.Windows.Point p1DipCanvas, System.Windows.Point p2DipCanvas)
-        {
-            // Canvas座標(DIP) → 画面座標(DIP)
-            var s1Dip = SelectionCanvas.PointToScreen(p1DipCanvas);
-            var s2Dip = SelectionCanvas.PointToScreen(p2DipCanvas);
-
-            // 画面座標(DIP) → 物理px
-            var ps = PresentationSource.FromVisual(this);
-            var m = ps?.CompositionTarget?.TransformToDevice ?? Matrix.Identity;
-
-            var p1Px = new System.Windows.Point(s1Dip.X * m.M11, s1Dip.Y * m.M22);
-            var p2Px = new System.Windows.Point(s2Dip.X * m.M11, s2Dip.Y * m.M22);
-
-            // 仮想スクリーン原点(左上)基準にオフセット
-            var vs = System.Windows.Forms.SystemInformation.VirtualScreen; // px
-
-            var leftPx = (int)Math.Round(Math.Min(p1Px.X, p2Px.X) - vs.Left);
-            var topPx = (int)Math.Round(Math.Min(p1Px.Y, p2Px.Y) - vs.Top);
-            var width = (int)Math.Round(Math.Abs(p2Px.X - p1Px.X));
-            var height = (int)Math.Round(Math.Abs(p2Px.Y - p1Px.Y));
-
-            return new System.Drawing.Rectangle(leftPx, topPx, width, height);
-        }
-
-        /// <summary>
-        /// 指定された矩形領域を切り抜いて、ピン留めウィンドウを作成します（現在はコメントアウト）。
-        /// </summary>
-        /// <param name="rect">切り抜く矩形領域。</param>
-        private void CropAndPin(System.Drawing.Rectangle rect)
-        {
-            LogService.LogInfo($"CropAndPin開始 - 矩形: X={rect.X}, Y={rect.Y}, Width={rect.Width}, Height={rect.Height}");
+            _selectionRect.Visibility = Visibility.Hidden;
 
             try
             {
-                // キャプチャしたビットマップが存在しない場合は何もしない
-                if (_capturedBitmap == null)
+                // 終了時のスクリーン座標(px)
+                var endScreenPx = System.Windows.Forms.Cursor.Position;
+
+                // 選択範囲を計算（スクリーン座標）
+                var screenLeftPx = Math.Min(_startScreenPx.X, endScreenPx.X);
+                var screenTopPx = Math.Min(_startScreenPx.Y, endScreenPx.Y);
+                var width = Math.Abs(endScreenPx.X - _startScreenPx.X);
+                var height = Math.Abs(endScreenPx.Y - _startScreenPx.Y);
+
+                LogService.LogInfo($"選択範囲 (screen px): {screenLeftPx}, {screenTopPx}, {width}x{height}");
+
+                // 範囲が十分大きいかチェック
+                if (width < 3 || height < 3)
                 {
-                    LogService.LogError("CropAndPin: キャプチャされたビットマップがありません");
+                    LogService.LogInfo("選択範囲が小さすぎます - キャプチャをキャンセル");
+                    this.Close();
                     return;
                 }
 
-                LogService.LogInfo($"ビットマップサイズ: {_capturedBitmap.Width}x{_capturedBitmap.Height}");
+                // スクリーン座標でのキャプチャ領域と表示位置を作成
+                var captureRegion = new System.Drawing.Rectangle(screenLeftPx, screenTopPx, width, height);
+                var displayPosition = new System.Drawing.Point(screenLeftPx, screenTopPx);
 
-                // 矩形領域をビットマップの範囲内に安全にクリップ
-                var originalRect = rect;
-                rect.Intersect(new System.Drawing.Rectangle(0, 0, _capturedBitmap.Width, _capturedBitmap.Height));
-
-                if (!originalRect.Equals(rect))
-                {
-                    LogService.LogInfo($"矩形をクリップしました: {originalRect} → {rect}");
-                }
-
-                // クリップ後の矩形が無効な場合は何もしない
-                if (rect.Width <= 0 || rect.Height <= 0)
-                {
-                    LogService.LogWarning("CropAndPin: クリップ後の矩形が無効です");
-                    return;
-                }
-
-                // 指定された矩形領域を切り抜いて新しいビットマップを作成
-                using var cropped = _capturedBitmap.Clone(rect, _capturedBitmap.PixelFormat);
-                LogService.LogInfo($"画像クロップ完了: {cropped.Width}x{cropped.Height} ピクセル");
-
-                // クリップボードへコピー
-                try
-                {
-                    var clip = BitmapToImageSource(cropped);
-                    if (clip.CanFreeze) clip.Freeze();
-                    System.Windows.Clipboard.SetImage(clip);
-                    LogService.LogInfo("切り抜き画像をクリップボードにコピーしました");
-                }
-                catch (Exception ex)
-                {
-                    LogService.LogException(ex, "クリップボードへのコピーに失敗しました");
-                }
-
-                // ピン留めウィンドウを表示
-                try
-                {
-                    var src = BitmapToImageSource(cropped);
-                    if (src.CanFreeze) src.Freeze();
-
-                    // ここで px → DIP に変換
-                    var dpi = VisualTreeHelper.GetDpi(this);
-                    var leftDip = rect.X / dpi.DpiScaleX;
-                    var topDip = rect.Y / dpi.DpiScaleY;
-
-                    Shuyu.Service.PinnedWindowManager.Create(src, (int)leftDip, (int)topDip);
-                    LogService.LogInfo($"ピン留めウィンドウを作成・表示しました:{leftDip}, {topDip}");
-                }
-                catch (Exception ex)
-                {
-                    LogService.LogException(ex, "PinnedWindow作成に失敗しました");
-                }
-
+                // 非同期でクロップとピン留め処理を実行
+                await CropAndPinAsync(captureRegion, displayPosition);
             }
             catch (Exception ex)
             {
-                LogService.LogException(ex, "CropAndPin処理中にエラーが発生しました");
-            }
-        }
-
-        // 指定された矩形領域を切り抜いて、ピン留めウィンドウを作成します。
-        // rectBitmapPx: キャプチャ画像内のクロップ矩形（ビットマップ相対 px）
-        // screenLeftPx/screenTopPx: 画面絶対の表示位置（px）
-        private void CropAndPin(System.Drawing.Rectangle rectBitmapPx, int screenLeftPx, int screenTopPx)
-        {
-            LogService.LogInfo($"CropAndPin開始 - 画像矩形(px): X={rectBitmapPx.X}, Y={rectBitmapPx.Y}, Width={rectBitmapPx.Width}, Height={rectBitmapPx.Height} / 画面位置(px): L={screenLeftPx}, T={screenTopPx}");
-            try
-            {
-                if (_capturedBitmap == null)
-                {
-                    LogService.LogError("CropAndPin: キャプチャされたビットマップがありません");
-                    return;
-                }
-
-                LogService.LogInfo($"ビットマップサイズ: {_capturedBitmap.Width}x{_capturedBitmap.Height}");
-
-                // 範囲クリップ
-                var originalRect = rectBitmapPx;
-                rectBitmapPx.Intersect(new System.Drawing.Rectangle(0, 0, _capturedBitmap.Width, _capturedBitmap.Height));
-                if (!originalRect.Equals(rectBitmapPx))
-                {
-                    LogService.LogInfo($"矩形をクリップしました: {originalRect} → {rectBitmapPx}");
-                }
-                if (rectBitmapPx.Width <= 0 || rectBitmapPx.Height <= 0)
-                {
-                    LogService.LogWarning("CropAndPin: クリップ後の矩形が無効です");
-                    return;
-                }
-
-                // クロップ
-                using var cropped = _capturedBitmap.Clone(rectBitmapPx, _capturedBitmap.PixelFormat);
-                LogService.LogInfo($"画像クロップ完了: {cropped.Width}x{cropped.Height} ピクセル");
-
-                // クリップボードへコピー（任意）
-                try
-                {
-                    var clip = BitmapToImageSource(cropped);
-                    if (clip.CanFreeze) clip.Freeze();
-                    System.Windows.Clipboard.SetImage(clip);
-                    LogService.LogInfo("切り抜き画像をクリップボードにコピーしました");
-                }
-                catch (Exception ex)
-                {
-                    LogService.LogException(ex, "クリップボードへのコピーに失敗しました");
-                }
-
-                // ピン留めウィンドウを表示（画面絶対px → DIP 変換して配置）
-                try
-                {
-                    var src = BitmapToImageSource(cropped);
-                    if (src.CanFreeze) src.Freeze();
-
-                    var dip = ScreenPxToDipAt(screenLeftPx, screenTopPx);
-                    Shuyu.Service.PinnedWindowManager.Create(src, (int)Math.Round(dip.X), (int)Math.Round(dip.Y));
-                    LogService.LogInfo($"ピン留めウィンドウを作成・表示しました (DIP): {dip.X:0.##}, {dip.Y:0.##}");
-                }
-                catch (Exception ex)
-                {
-                    LogService.LogException(ex, "PinnedWindow作成に失敗しました");
-                }
-            }
-            catch (Exception ex)
-            {
-                LogService.LogException(ex, "CropAndPin処理中にエラーが発生しました");
-            }
-        }
-
-        /// <summary>
-        /// System.Drawing.Bitmap を WPF の BitmapSource に変換します。
-        /// </summary>
-        /// <param name="bmp">変換する Bitmap オブジェクト。</param>
-        /// <returns>変換された BitmapSource。</returns>
-        private BitmapSource BitmapToImageSource(System.Drawing.Bitmap bmp)
-        {
-            LogService.LogDebug("BitmapからBitmapSourceへの変換を開始");
-
-            // ビットマップからHBITMAPハンドルを取得
-            var hBitmap = bmp.GetHbitmap();
-            try
-            {
-                // HBITMAPからWPFのBitmapSourceを作成
-                var src = Imaging.CreateBitmapSourceFromHBitmap(
-                    hBitmap,                    // ソースのHBITMAPハンドル
-                    IntPtr.Zero,               // パレットハンドル（使用しない）
-                    Int32Rect.Empty,           // ソース矩形（全体を使用）
-                    BitmapSizeOptions.FromEmptyOptions()); // サイズオプション（デフォルト）
-
-                LogService.LogDebug("BitmapSource変換完了");
-                return src;
-            }
-            catch (Exception ex)
-            {
-                LogService.LogException(ex, "BitmapからBitmapSourceへの変換中にエラーが発生しました");
-                throw;
+                LogService.LogException(ex, "マウスアップ処理エラー");
             }
             finally
             {
-                // リソースリークを防ぐためHBITMAPハンドルを解放
-                DeleteObject(hBitmap);
+                this.Close();
             }
         }
+
+
+
+        /// <summary>
+        /// 指定された矩形領域を切り抜いて、ピン留めウィンドウを非同期で作成します。
+        /// </summary>
+        /// <param name="screenRegion">スクリーン座標でのキャプチャ領域</param>
+        /// <param name="displayPosition">表示位置（スクリーン座標）</param>
+        private async Task CropAndPinAsync(System.Drawing.Rectangle screenRegion, System.Drawing.Point displayPosition)
+        {
+            if (_disposed)
+                return;
+
+            try
+            {
+                LogService.LogInfo($"非同期クロップ開始 - 領域: {screenRegion}, 表示位置: {displayPosition}");
+                
+                // 非同期で指定領域をキャプチャ
+                var result = await _captureService.CaptureRegionAsync(screenRegion, cancellationToken: _cancellationTokenSource.Token);
+                
+                if (!result.IsSuccess || result.BitmapSource == null)
+                {
+                    LogService.LogError($"クロップ用キャプチャに失敗: {result.ErrorMessage}");
+                    return;
+                }
+
+                // UIスレッドでクリップボードへコピーとピン留めウィンドウ作成
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    try
+                    {
+                        // クリップボードへコピー
+                        System.Windows.Clipboard.SetImage(result.BitmapSource);
+                        LogService.LogInfo("切り抜き画像をクリップボードにコピーしました");
+
+                        // 座標変換してピン留めウィンドウを作成
+                        var dipPosition = CoordinateTransformation.ScreenPixelToDip(
+                            displayPosition.X, displayPosition.Y);
+                        
+                        PinnedWindowManager.Create(result.BitmapSource, 
+                            (int)Math.Round(dipPosition.X), (int)Math.Round(dipPosition.Y));
+                        
+                        LogService.LogInfo($"ピン留めウィンドウを作成・表示しました (DIP): {dipPosition.X:F1}, {dipPosition.Y:F1}");
+                    }
+                    catch (Exception ex)
+                    {
+                        LogService.LogException(ex, "クリップボードコピーまたはPinnedWindow作成エラー");
+                    }
+                });
+            }
+            catch (Exception ex) when (!(ex is OperationCanceledException))
+            {
+                LogService.LogException(ex, "非同期クロップ処理エラー");
+            }
+        }
+
 
         /// <summary>
         /// キー押下イベントの処理。Escape キーでウィンドウを閉じます。
@@ -452,50 +387,31 @@ namespace Shuyu
             }
         }
 
-        // 画面絶対px座標を、その座標が属するモニターのDPIでDIPに変換
-        private (double X, double Y) ScreenPxToDipAt(int pxX, int pxY)
-        {
-            try
-            {
-                var hmon = MonitorFromPoint(new POINT { X = pxX, Y = pxY }, MONITOR_DEFAULTTONEAREST);
-                if (hmon != IntPtr.Zero)
-                {
-                    if (GetDpiForMonitor(hmon, MDT_EFFECTIVE_DPI, out uint dpiX, out uint dpiY) == 0 && dpiX != 0 && dpiY != 0)
-                    {
-                        return (pxX * 96.0 / dpiX, pxY * 96.0 / dpiY);
-                    }
-                }
-            }
-            catch
-            {
-                // ignore and fallback
-            }
-
-            // フォールバック（このウィンドウのDPI）
-            var dpi = VisualTreeHelper.GetDpi(this);
-            return (pxX / dpi.DpiScaleX, pxY / dpi.DpiScaleY);
-        }
 
         /// <summary>
-        /// GDIオブジェクト（HBITMAP等）を削除するためのWin32 API
+        /// リソースを解放します
         /// </summary>
-        /// <param name="hObject">削除するGDIオブジェクトのハンドル</param>
-        /// <returns>成功した場合はtrue</returns>
-        [DllImport("gdi32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool DeleteObject(IntPtr hObject);
-
-        // Win32: モニター/DPI取得
-        [StructLayout(LayoutKind.Sequential)]
-        private struct POINT { public int X; public int Y; }
-
-        private const uint MONITOR_DEFAULTTONEAREST = 2;
-        private const int MDT_EFFECTIVE_DPI = 0;
-
-        [DllImport("user32.dll")]
-        private static extern IntPtr MonitorFromPoint(POINT pt, uint dwFlags);
-
-        [DllImport("Shcore.dll")]
-        private static extern int GetDpiForMonitor(IntPtr hmonitor, int dpiType, out uint dpiX, out uint dpiY);
+        public void Dispose()
+        {
+            if (_disposed) return;
+            
+            _disposed = true;
+            
+            try
+            {
+                // キャンセレーショントークンをキャンセル
+                _cancellationTokenSource?.Cancel();
+                _cancellationTokenSource?.Dispose();
+                
+                // キャプチャサービスを解放
+                _captureService?.Dispose();
+                
+                LogService.LogDebug("CaptureOverlayWindowリソース解放完了");
+            }
+            catch (Exception ex)
+            {
+                LogService.LogException(ex, "CaptureOverlayWindowリソース解放エラー");
+            }
+        }
     }
 }
