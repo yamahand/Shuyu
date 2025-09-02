@@ -66,6 +66,12 @@ jobs:
         "SHORT_SHA=$shortSha" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
         "FULL_VERSION=$fullVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
         "SHORT_SHA=$shortSha" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        # csproj の相対パスを出力（publish でソリューションではなくプロジェクトを指定するため）
+        if ($csproj) {
+          $rel = [IO.Path]::GetRelativePath((Get-Location).Path, $csproj.FullName)
+          "CSPROJ_PATH=$rel" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "CSPROJ_PATH=$rel" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        }
 
         Write-Host "Generated version: $fullVersion (base: $baseVersion)"
         Write-Host "Short SHA: $shortSha"
@@ -82,7 +88,10 @@ jobs:
     # .NET 9用の自己完結型アプリケーション発行
     - name: Publish application (Self-contained)
       run: |
-        dotnet publish ${{ env.SOLUTION_FILE }} `
+        # restore with runtime for ReadyToRun runtime pack
+        dotnet restore ${{ steps.version.outputs.CSPROJ_PATH }} -r win-x64 -p:PublishReadyToRun=true
+
+        dotnet publish ${{ steps.version.outputs.CSPROJ_PATH }} `
           --configuration Release `
           --no-build `
           --output ./publish/win-x64 `
@@ -96,7 +105,10 @@ jobs:
     # フレームワーク依存版も作成（サイズが小さい）
     - name: Publish application (Framework-dependent)
       run: |
-        dotnet publish ${{ env.SOLUTION_FILE }} `
+        # framework-dependent でも ReadyToRun を使う場合は runtime 指定で restore
+        dotnet restore ${{ steps.version.outputs.CSPROJ_PATH }} -r win-x64 -p:PublishReadyToRun=true
+
+        dotnet publish ${{ steps.version.outputs.CSPROJ_PATH }} `
           --configuration Release `
           --no-build `
           --output ./publish/win-x64-fx `
@@ -109,7 +121,9 @@ jobs:
     # ARM64版も作成（自己完結型）
     - name: Publish application (ARM64)
       run: |
-        dotnet publish ${{ env.SOLUTION_FILE }} `
+        dotnet restore ${{ steps.version.outputs.CSPROJ_PATH }} -r win-arm64 -p:PublishReadyToRun=true
+
+        dotnet publish ${{ steps.version.outputs.CSPROJ_PATH }} `
           --configuration Release `
           --no-build `
           --output ./publish/win-arm64 `
