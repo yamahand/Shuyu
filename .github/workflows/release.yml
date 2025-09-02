@@ -1,0 +1,235 @@
+name: Build and Release Shuyu
+
+on:
+  push:
+    branches: [ master, main ]
+    paths-ignore:
+      - 'README.md'
+      - '**/*.md'
+      - '.gitignore'
+      - 'LICENSE'
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  PROJECT_NAME: 'Shuyu'
+  SOLUTION_FILE: 'Shuyu.sln'
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    
+    steps:
+    # リポジトリのチェックアウト
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # タグとコミット履歴の取得
+    
+    # .NET 9 SDKのセットアップ
+    - name: Setup .NET 9
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    # NuGetパッケージの復元
+    - name: Restore NuGet packages
+      run: dotnet restore ${{ env.SOLUTION_FILE }}
+    
+    # バージョン番号の生成とビルド情報の設定
+    - name: Generate version and build info
+      id: version
+      run: |
+        # csprojファイルからVersionを読み取り
+        [xml]$proj = Get-Content "Shuyu.csproj"
+        $baseVersion = $proj.Project.PropertyGroup.Version
+        
+        if (-not $baseVersion) {
+          # Versionが設定されていない場合のデフォルト
+          $baseVersion = "0.1.0"
+        }
+        
+        # ビルド番号を追加（例: 0.1.0 -> 0.1.0.123）
+        $fullVersion = "$baseVersion.${{ github.run_number }}"
+        
+        # 短縮コミットハッシュも生成
+        $shortSha = "${{ github.sha }}".Substring(0, 7)
+        
+        # GitHub環境変数とstep outputの両方に設定
+        echo "VERSION=$fullVersion" >> $env:GITHUB_OUTPUT
+        echo "BASE_VERSION=$baseVersion" >> $env:GITHUB_OUTPUT
+        echo "SHORT_SHA=$shortSha" >> $env:GITHUB_OUTPUT
+        echo "FULL_VERSION=$fullVersion" >> $env:GITHUB_ENV
+        echo "SHORT_SHA=$shortSha" >> $env:GITHUB_ENV
+        
+        echo "Generated version: $fullVersion (base: $baseVersion)"
+        echo "Short SHA: $shortSha"
+    
+    # プロジェクトのビルド（Release構成）
+    - name: Build solution
+      run: |
+        dotnet build ${{ env.SOLUTION_FILE }} `
+          --configuration Release `
+          --no-restore `
+          --verbosity minimal `
+          -p:Version=${{ steps.version.outputs.VERSION }}
+    
+    # .NET 9用の自己完結型アプリケーション発行
+    - name: Publish application (Self-contained)
+      run: |
+        dotnet publish ${{ env.SOLUTION_FILE }} `
+          --configuration Release `
+          --no-build `
+          --output ./publish/win-x64 `
+          --self-contained true `
+          --runtime win-x64 `
+          -p:PublishSingleFile=true `
+          -p:IncludeNativeLibrariesForSelfExtract=true `
+          -p:PublishReadyToRun=true `
+          -p:Version=${{ steps.version.outputs.VERSION }}
+    
+    # フレームワーク依存版も作成（サイズが小さい）
+    - name: Publish application (Framework-dependent)
+      run: |
+        dotnet publish ${{ env.SOLUTION_FILE }} `
+          --configuration Release `
+          --no-build `
+          --output ./publish/win-x64-fx `
+          --self-contained false `
+          --runtime win-x64 `
+          -p:PublishSingleFile=true `
+          -p:PublishReadyToRun=true `
+          -p:Version=${{ steps.version.outputs.VERSION }}
+    
+    # ARM64版も作成（自己完結型）
+    - name: Publish application (ARM64)
+      run: |
+        dotnet publish ${{ env.SOLUTION_FILE }} `
+          --configuration Release `
+          --no-build `
+          --output ./publish/win-arm64 `
+          --self-contained true `
+          --runtime win-arm64 `
+          -p:PublishSingleFile=true `
+          -p:IncludeNativeLibrariesForSelfExtract=true `
+          -p:PublishReadyToRun=true `
+          -p:Version=${{ steps.version.outputs.VERSION }}
+    
+    # README.txtファイルの作成
+    - name: Create README file
+      run: |
+        $readmeContent = @"
+        Shuyu - Screen Capture Application
+        ==================================
+        
+        Version: v${{ steps.version.outputs.VERSION }}
+        Build Date: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')
+        Commit: ${{ steps.version.outputs.SHORT_SHA }}
+        
+        System Requirements:
+        - Windows 10/11
+        - .NET 9.0 Runtime (フレームワーク依存版の場合)
+        
+        インストール方法:
+        1. ZIPファイルを任意のフォルダに展開
+        2. Shuyu.exe を実行
+        3. アプリケーションはシステムトレイに表示されます
+        
+        使用方法:
+        - システムトレイアイコンを右クリックしてオプションにアクセス
+        - Capture: 新しいスクリーンキャプチャを開始
+        - Settings: アプリケーション設定
+        - Exit: アプリケーションを終了
+        
+        キャプチャ中:
+        - クリック&ドラッグで範囲を選択
+        - 右クリックでキャンセル
+        - キャプチャした画像は保存され、参照用にピン留めできます
+        
+        サポート:
+        問題が発生した場合は、GitHubリポジトリでIssueを報告してください:
+        https://github.com/yamahand/Shuyu/issues
+        "@
+        
+        # 各フォルダにREADMEを作成
+        $readmeContent | Out-File -FilePath "./publish/win-x64/README.txt" -Encoding UTF8
+        $readmeContent | Out-File -FilePath "./publish/win-x64-fx/README.txt" -Encoding UTF8  
+        $readmeContent | Out-File -FilePath "./publish/win-arm64/README.txt" -Encoding UTF8
+    
+    # 各プラットフォーム向けのZIPファイル作成
+    - name: Create release archives
+      run: |
+        # 自己完結版 (x64)
+        Compress-Archive -Path "./publish/win-x64/*" -DestinationPath "./${{ env.PROJECT_NAME }}-v${{ steps.version.outputs.VERSION }}-win-x64-standalone.zip"
+        
+        # フレームワーク依存版 (x64)
+        Compress-Archive -Path "./publish/win-x64-fx/*" -DestinationPath "./${{ env.PROJECT_NAME }}-v${{ steps.version.outputs.VERSION }}-win-x64-framework-dependent.zip"
+        
+        # ARM64版
+        Compress-Archive -Path "./publish/win-arm64/*" -DestinationPath "./${{ env.PROJECT_NAME }}-v${{ steps.version.outputs.VERSION }}-win-arm64-standalone.zip"
+    
+    # GitHubリリースの作成と成果物のアップロード（最新のアクションを使用）
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: "v${{ steps.version.outputs.VERSION }}"
+        name: "Shuyu v${{ steps.version.outputs.VERSION }} (Development)"
+        body: |
+          ## 🚧 Shuyu v${{ steps.version.outputs.VERSION }} (開発版)
+          
+          **⚠️ 注意: これは開発版リリースです。安定版ではないため、予期しない動作やバグが含まれる可能性があります。**
+          
+          Windows用の軽量で効率的なスクリーンキャプチャアプリケーション
+          
+          ### ✨ 主な機能
+          - 画面の選択範囲キャプチャ
+          - 直感的なオーバーレイ選択UI
+          - システムトレイ統合
+          - キャプチャ画像のピン留め機能
+          - カスタマイズ可能なホットキーサポート
+          - マルチディスプレイ対応
+          - デバッグログ機能
+          
+          ### 📦 ダウンロード
+          
+          **Intel/AMD 64bit CPU 推奨**: `${{ env.PROJECT_NAME }}-v${{ steps.version.outputs.VERSION }}-win-x64-standalone.zip`
+          - .NET Runtimeが不要（自己完結型）
+          - サイズは大きめですが、すぐに実行可能
+          
+          **Intel/AMD 64bit CPU 軽量版**: `${{ env.PROJECT_NAME }}-v${{ steps.version.outputs.VERSION }}-win-x64-framework-dependent.zip`
+          - 別途 .NET 9.0 Runtime のインストールが必要
+          - サイズが小さい
+          
+          **ARM64 CPU**: `${{ env.PROJECT_NAME }}-v${{ steps.version.outputs.VERSION }}-win-arm64-standalone.zip`
+          - ARM64プロセッサ搭載のWindows PC用（Surface Pro X など）
+          - .NET Runtimeが不要（自己完結型）
+          
+          ### 💻 システム要件
+          - Windows 10/11
+          - .NET 9.0 Runtime（フレームワーク依存版の場合）
+          
+          ### 🚀 インストール
+          1. CPUアーキテクチャに適したZIPファイルをダウンロード
+          2. 任意のフォルダに展開
+          3. `Shuyu.exe` を実行
+          
+          ### 📝 変更履歴
+          
+          **ビルド情報**
+          - ベースバージョン: ${{ steps.version.outputs.BASE_VERSION }}
+          - ビルド番号: ${{ github.run_number }}
+          - ビルド日時: ${{ github.event.head_commit.timestamp }}
+          - コミット: [`${{ steps.version.outputs.SHORT_SHA }}`](https://github.com/yamahand/Shuyu/commit/${{ github.sha }})
+          - .NET バージョン: 9.0
+          - 対応アーキテクチャ: x64, ARM64
+          
+          ---
+          
+          🐛 バグ報告や機能要求は [Issues](https://github.com/yamahand/Shuyu/issues) でお知らせください
+        files: |
+          ${{ env.PROJECT_NAME }}-v${{ steps.version.outputs.VERSION }}-win-x64-standalone.zip
+          ${{ env.PROJECT_NAME }}-v${{ steps.version.outputs.VERSION }}-win-x64-framework-dependent.zip
+          ${{ env.PROJECT_NAME }}-v${{ steps.version.outputs.VERSION }}-win-arm64-standalone.zip
+        prerelease: true
+        draft: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
