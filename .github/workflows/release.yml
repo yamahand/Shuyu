@@ -88,50 +88,50 @@ jobs:
     # .NET 9用の自己完結型アプリケーション発行
     - name: Publish application (Self-contained)
       run: |
-        # restore with runtime for ReadyToRun runtime pack
-        dotnet restore ${{ steps.version.outputs.CSPROJ_PATH }} -r win-x64 -p:PublishReadyToRun=true
+        # runtime 向けにビルドしてランタイム固有の成果物を生成
+        dotnet build ${{ steps.version.outputs.CSPROJ_PATH }} `
+          --configuration Release `
+          --no-restore `
+          --runtime win-x64 `
+          -p:Version=${{ steps.version.outputs.VERSION }}
 
         dotnet publish ${{ steps.version.outputs.CSPROJ_PATH }} `
           --configuration Release `
-          --no-build `
           --output ./publish/win-x64 `
           --self-contained true `
           --runtime win-x64 `
           -p:PublishSingleFile=true `
           -p:IncludeNativeLibrariesForSelfExtract=true `
-          -p:PublishReadyToRun=true `
           -p:Version=${{ steps.version.outputs.VERSION }}
-    
+
     # フレームワーク依存版も作成（サイズが小さい）
     - name: Publish application (Framework-dependent)
       run: |
-        # framework-dependent でも ReadyToRun を使う場合は runtime 指定で restore
-        dotnet restore ${{ steps.version.outputs.CSPROJ_PATH }} -r win-x64 -p:PublishReadyToRun=true
-
+        # フレームワーク依存版は publish にビルドを任せる（--no-build を削除）
         dotnet publish ${{ steps.version.outputs.CSPROJ_PATH }} `
           --configuration Release `
-          --no-build `
           --output ./publish/win-x64-fx `
           --self-contained false `
           --runtime win-x64 `
           -p:PublishSingleFile=true `
-          -p:PublishReadyToRun=true `
           -p:Version=${{ steps.version.outputs.VERSION }}
-    
+
     # ARM64版も作成（自己完結型）
     - name: Publish application (ARM64)
       run: |
-        dotnet restore ${{ steps.version.outputs.CSPROJ_PATH }} -r win-arm64 -p:PublishReadyToRun=true
+        dotnet build ${{ steps.version.outputs.CSPROJ_PATH }} `
+          --configuration Release `
+          --no-restore `
+          --runtime win-arm64 `
+          -p:Version=${{ steps.version.outputs.VERSION }}
 
         dotnet publish ${{ steps.version.outputs.CSPROJ_PATH }} `
           --configuration Release `
-          --no-build `
           --output ./publish/win-arm64 `
           --self-contained true `
           --runtime win-arm64 `
           -p:PublishSingleFile=true `
           -p:IncludeNativeLibrariesForSelfExtract=true `
-          -p:PublishReadyToRun=true `
           -p:Version=${{ steps.version.outputs.VERSION }}
     
     # README.txtファイルの作成
