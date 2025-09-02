@@ -226,9 +226,12 @@ public class TrayService : IDisposable
     /// </summary>
     private void ShowAbout()
     {
+        var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString();
+        string versionText = version != null ? $"Shuyu v{version}" : "Shuyu v-.-.-";
+
         // Windows Forms のメッセージボックスでバージョン情報を表示
         System.Windows.Forms.MessageBox.Show(
-            "Shuyu v1.0\nスクリーンキャプチャツール",    // メッセージ本文
+            versionText,    // メッセージ本文
             "バージョン情報",                          // タイトル
             MessageBoxButtons.OK,                      // ボタン：OKのみ
             MessageBoxIcon.Information                 // アイコン：情報アイコン
