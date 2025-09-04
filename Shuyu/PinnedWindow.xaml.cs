@@ -88,10 +88,19 @@ namespace Shuyu
         private ContextMenu BuildContextMenu()
         {
             var menu = new ContextMenu();
-            menu.Items.Add(CreateItem("保存 (PNG)", () => SaveWithDialog("png")));
-            menu.Items.Add(CreateItem("保存 (JPEG)", () => SaveWithDialog("jpg")));
-            menu.Items.Add(CreateItem("保存 (BMP)", () => SaveWithDialog("bmp")));
-            menu.Items.Add(CreateItem("保存 (DDS)", () => SaveWithDialog("dds")));
+            
+            // クリップボードにコピー
+            menu.Items.Add(CreateItem("クリップボードにコピー", CopyToClipboard));
+            menu.Items.Add(new Separator());
+            
+            // 保存メニュー（ネスト化）
+            var saveMenu = new MenuItem { Header = "保存" };
+            saveMenu.Items.Add(CreateItem("PNG", () => SaveWithDialog("png")));
+            saveMenu.Items.Add(CreateItem("JPEG", () => SaveWithDialog("jpg")));
+            saveMenu.Items.Add(CreateItem("BMP", () => SaveWithDialog("bmp")));
+            saveMenu.Items.Add(CreateItem("DDS", () => SaveWithDialog("dds")));
+            menu.Items.Add(saveMenu);
+            
             menu.Items.Add(new Separator());
             menu.Items.Add(CreateItem("閉じる", () => this.Close()));
             return menu;
@@ -141,6 +150,20 @@ namespace Shuyu
                     LogService.LogException(ex, "画像保存エラー");
                     System.Windows.MessageBox.Show(this, $"保存に失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
+            }
+        }
+
+        private void CopyToClipboard()
+        {
+            try
+            {
+                Clipboard.SetImage(_image);
+                LogService.LogInfo("画像をクリップボードにコピーしました");
+            }
+            catch (Exception ex)
+            {
+                LogService.LogException(ex, "クリップボードコピーエラー");
+                System.Windows.MessageBox.Show(this, $"クリップボードへのコピーに失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
