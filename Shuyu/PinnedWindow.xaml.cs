@@ -6,6 +6,7 @@ using System.Windows.Input;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using Shuyu.Service;
+using Shuyu.Resources;
 
 namespace Shuyu
 {
@@ -90,11 +91,11 @@ namespace Shuyu
             var menu = new ContextMenu();
             
             // クリップボードにコピー
-            menu.Items.Add(CreateItem("クリップボードにコピー", CopyToClipboard));
+            menu.Items.Add(CreateItem(Strings.CopyToClipboard, CopyToClipboard));
             menu.Items.Add(new Separator());
             
             // 保存メニュー（ネスト化）
-            var saveMenu = new MenuItem { Header = "保存" };
+            var saveMenu = new MenuItem { Header = Strings.Save };
             saveMenu.Items.Add(CreateItem("PNG", () => SaveWithDialog("png")));
             saveMenu.Items.Add(CreateItem("JPEG", () => SaveWithDialog("jpg")));
             saveMenu.Items.Add(CreateItem("BMP", () => SaveWithDialog("bmp")));
@@ -102,7 +103,7 @@ namespace Shuyu
             menu.Items.Add(saveMenu);
             
             menu.Items.Add(new Separator());
-            menu.Items.Add(CreateItem("閉じる", () => this.Close()));
+            menu.Items.Add(CreateItem(Strings.Close, () => this.Close()));
             return menu;
         }
 
@@ -117,7 +118,7 @@ namespace Shuyu
         {
             var dlg = new Microsoft.Win32.SaveFileDialog
             {
-                Title = "画像を保存",
+                Title = Strings.SaveImage,
                 FileName = $"pinned_{DateTime.Now:yyyyMMdd_HHmmss}.{ext}",
                 Filter = ext switch
                 {
@@ -136,19 +137,19 @@ namespace Shuyu
                 if (!SecurityHelper.IsValidFilePath(dlg.FileName))
                 {
                     LogService.LogWarning($"無効なファイルパスが指定されました: {SecurityHelper.SanitizeLogMessage(dlg.FileName)}");
-                    System.Windows.MessageBox.Show(this, "指定されたファイルパスは無効です。", "エラー", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    System.Windows.MessageBox.Show(this, Strings.InvalidFilePath, Strings.Error, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
                 try
                 {
                     SaveImage(dlg.FileName);
-                    LogService.LogInfo($"画像を保存しました: {SecurityHelper.SanitizeLogMessage(dlg.FileName)}");
+                    LogService.LogInfo(string.Format(Strings.ImageSaved, SecurityHelper.SanitizeLogMessage(dlg.FileName)));
                 }
                 catch (Exception ex)
                 {
-                    LogService.LogException(ex, "画像保存エラー");
-                    System.Windows.MessageBox.Show(this, $"保存に失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                    LogService.LogException(ex, Strings.ImageSaveError);
+                    System.Windows.MessageBox.Show(this, string.Format(Strings.SaveFailed, ex.Message), Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
@@ -157,13 +158,13 @@ namespace Shuyu
         {
             try
             {
-                Clipboard.SetImage(_image);
-                LogService.LogInfo("画像をクリップボードにコピーしました");
+                System.Windows.Clipboard.SetImage(_image);
+                LogService.LogInfo(Strings.ImageCopiedToClipboard);
             }
             catch (Exception ex)
             {
-                LogService.LogException(ex, "クリップボードコピーエラー");
-                System.Windows.MessageBox.Show(this, $"クリップボードへのコピーに失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                LogService.LogException(ex, Strings.ClipboardCopyError);
+                System.Windows.MessageBox.Show(this, string.Format(Strings.ClipboardCopyFailed, ex.Message), Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

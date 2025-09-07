@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Interop;
 using System.Diagnostics;
 using Shuyu.Service; // 追加: PinnedWindowManager 参照
+using Shuyu.Resources;
 
 /// <summary>
 /// トレイアイコンと関連する操作（キャプチャ開始、設定表示、終了）を管理するサービスです。
@@ -125,29 +126,29 @@ public class TrayService : IDisposable
         var menu = new ContextMenuStrip();
 
         // メニュー項目を追加：キャプチャ開始（ホットキー表示付き）
-        menu.Items.Add("キャプチャ開始 (Shift+PrintScreen)", null, (s, e) => _onCaptureRequested?.Invoke());
+        menu.Items.Add(Strings.StartCapture, null, (s, e) => _onCaptureRequested?.Invoke());
         
         // 区切り線を追加
         menu.Items.Add(new ToolStripSeparator());
 
         // ピン留め関連
-        menu.Items.Add("ピン留めをすべて削除", null, (s, e) => PinnedWindowManager.CloseAll());
-        menu.Items.Add("ピン留めの表示/非表示を切り替え", null, (s, e) => PinnedWindowManager.ToggleAllVisibility());
+        menu.Items.Add(Strings.RemoveAllPinned, null, (s, e) => PinnedWindowManager.CloseAll());
+        menu.Items.Add(Strings.TogglePinnedVisibility, null, (s, e) => PinnedWindowManager.ToggleAllVisibility());
         
         // 区切り線を追加
         menu.Items.Add(new ToolStripSeparator());
         
         // メニュー項目を追加：設定画面表示
-        menu.Items.Add("設定", null, (s, e) => ShowSettingsWindow());
+        menu.Items.Add(Strings.Settings, null, (s, e) => ShowSettingsWindow());
         
         // メニュー項目を追加：バージョン情報表示
-        menu.Items.Add("バージョン情報", null, (s, e) => ShowAbout());
+        menu.Items.Add(Strings.VersionInfo, null, (s, e) => ShowAbout());
         
         // 区切り線を追加
         menu.Items.Add(new ToolStripSeparator());
         
         // メニュー項目を追加：アプリケーション終了
-        menu.Items.Add("終了", null, (s, e) => _onExitRequested?.Invoke());
+        menu.Items.Add(Strings.Exit, null, (s, e) => _onExitRequested?.Invoke());
 
         return menu;
     }
@@ -192,7 +193,11 @@ public class TrayService : IDisposable
             ApplyHookSetting(wantHook);
 
             // 変更された設定をファイルに永続化
-            var s = new UserSettings { useLowLevelHook = wantHook };
+            var s = new UserSettings 
+            { 
+                useLowLevelHook = wantHook,
+                language = _settingsWindow.SelectedLanguage
+            };
             UserSettingsStore.Save(s);
         }
     }
@@ -227,12 +232,12 @@ public class TrayService : IDisposable
     private void ShowAbout()
     {
         var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString();
-        string versionText = version != null ? $"Shuyu v{version}" : "Shuyu v-.-.-";
+        string versionText = version != null ? string.Format(Strings.ShuyuVersionFormat, version) : Strings.ShuyuVersionUnknown;
 
         // Windows Forms のメッセージボックスでバージョン情報を表示
         System.Windows.Forms.MessageBox.Show(
             versionText,    // メッセージ本文
-            "バージョン情報",                          // タイトル
+            Strings.VersionInfo,                          // タイトル
             MessageBoxButtons.OK,                      // ボタン：OKのみ
             MessageBoxIcon.Information                 // アイコン：情報アイコン
         );
