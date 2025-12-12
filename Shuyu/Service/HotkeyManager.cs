@@ -114,33 +114,90 @@ namespace Shuyu
         /// <summary>
         /// 低レベルキーボードフックをインストールします。Shift+PrintScreen を検出して抑止します。
         /// </summary>
-        public void InstallLowLevelHook()
+        public bool InstallLowLevelHook()
         {
             lock (_lock) // スレッドセーフ処理
             {
-                // 既にフックがインストールされている場合は何もしない
-                if (_keyboardHookId != IntPtr.Zero) return;
+                // 既にフックがインストールされている場合は何もしない（成功とみなす）
+                if (_keyboardHookId != IntPtr.Zero) return true;
                 
                 // GCによるデリゲート解放を防ぐためインスタンス変数に保持
                 _keyboardProc = HookCallback;
                 try
                 {
-                    // 現在のプロセスのモジュールハンドルを取得
-                    IntPtr module = GetModuleHandle(Process.GetCurrentProcess().MainModule?.ModuleName ?? string.Empty);
+                    // 現在のプロセスのモジュールハンドルを取得（MainModule が null の場合は null を渡す）
+                    string? moduleName = null;
+                    try
+                    {
+                        moduleName = Process.GetCurrentProcess().MainModule?.ModuleName;
+                    }
+                    catch (Exception ex)
+                    {
+                        // MainModule へのアクセスは環境によって例外を投げる可能性があるため安全に扱う
+                        LogService.LogWarning($"[HotkeyManager] Unable to get MainModule name: {SecurityHelper.SanitizeLogMessage(ex.Message)}");
+                        moduleName = null;
+                    }
+
+                    IntPtr module;
+                    if (moduleName == null)
+                    {
+                        module = IntPtr.Zero;
+                    }
+                    else
+                    {
+                        module = GetModuleHandle(moduleName);
+                    }
+
                     // 低レベルキーボードフックをインストール
                     _keyboardHookId = SetWindowsHookEx(WhKeyboardLl, _keyboardProc, module, 0);
-#if DEBUG
+
                     if (_keyboardHookId == IntPtr.Zero)
-                        LogService.LogError("[HotkeyManager] Install hook failed: " + Marshal.GetLastWin32Error());
-#endif
+                    {
+                        var err = Marshal.GetLastWin32Error();
+                        LogService.LogError($"[HotkeyManager] Install hook failed. GetLastError={err}");
+
+                        // フックのインストールに失敗した場合は安全にフォールバックとして RegisterHotKey を試みる
+                        var ok = RegisterShiftPrintScreenHotkey();
+                        if (ok)
+                        {
+                            LogService.LogInfo("[HotkeyManager] Fallback: Registered Shift+PrintScreen via RegisterHotKey");
+                            useLowLevelHook = false;
+                            return false;
+                        }
+                        else
+                        {
+                            LogService.LogWarning("[HotkeyManager] Fallback RegisterHotKey also failed");
+                            useLowLevelHook = false;
+                            return false;
+                        }
+                    }
+
                     // フラグを更新
                     useLowLevelHook = true;
+                    return true;
                 }
                 catch (Exception ex)
                 {
 #if DEBUG
                     LogService.LogException(ex, "[HotkeyManager] InstallLowLevelHook exception");
+#else
+                    LogService.LogWarning($"[HotkeyManager] InstallLowLevelHook exception: {SecurityHelper.SanitizeLogMessage(ex.Message)}");
 #endif
+                    // インストールに失敗した場合は RegisterHotKey でフォールバック
+                    try
+                    {
+                        if (RegisterShiftPrintScreenHotkey())
+                        {
+                            LogService.LogInfo("[HotkeyManager] Fallback: Registered Shift+PrintScreen via RegisterHotKey after exception");
+                        }
+                        else
+                        {
+                            LogService.LogWarning("[HotkeyManager] Fallback RegisterHotKey failed after exception");
+                        }
+                    }
+                    catch { }
+                    useLowLevelHook = false;
+                    return false;
                 }
             }
         }
@@ -182,7 +239,12 @@ namespace Shuyu
             {
                 // 低レベルフックに切り替え：RegisterHotKeyを解除してフックをインストール
                 UnregisterHotkey();
-                InstallLowLevelHook();
+                var ok = InstallLowLevelHook();
+                if (!ok)
+                {
+                    // インストール失敗時は RegisterHotKey が既に試行されている可能性があるためフラグを確認
+                    useLowLevelHook = false;
+                }
             }
             else
             {
@@ -282,6 +344,8 @@ namespace Shuyu
             {
 #if DEBUG
                 LogService.LogException(ex, "[HotkeyManager] HookCallback exception");
+#else
+                LogService.LogWarning($"[HotkeyManager] HookCallback exception: {SecurityHelper.SanitizeLogMessage(ex.Message)}");
 #endif
             }
             
