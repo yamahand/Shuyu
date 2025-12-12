@@ -92,3 +92,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 If you encounter any issues or have questions, please [open an issue](../../issues) on GitHub.
 
+Note about DPI test script:
+
+- There is a small PowerShell helper at `scripts\dpi_test.ps1` that exercises screen capture in multi-monitor and DPI-scaled environments. It computes expected pixel sizes from DIP values using per-monitor DPI (with fallbacks) and compares the captured image sizes.
+- Run it from the repository root:
+
+```powershell
+pwsh -File .\scripts\dpi_test.ps1 -OutDir .\artifacts\dpi-tests
+```
+
+- The script requires a GUI session (it uses screen capture APIs) and may not run on headless CI runners. Use a Windows runner or a VM with desktop session for CI execution. Add `-Verbose` for detailed logs (which show which DPI method was used).
+
