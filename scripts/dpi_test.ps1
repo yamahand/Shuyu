@@ -61,6 +61,25 @@ else {
     $DpiHelperAvailable = $true
 }
 
+# Fallback DPI getter when native helper is not available.
+function Get-DpiForPointFallback {
+    param([int]$x, [int]$y)
+    try {
+        $pt = New-Object System.Drawing.Point($x, $y)
+        $scr = [System.Windows.Forms.Screen]::FromPoint($pt)
+        # Use a Graphics object to get DPI; this provides system/monitor DPI in many cases.
+        $g = [System.Drawing.Graphics]::FromHwnd([IntPtr]::Zero)
+        $dpiX = [int]$g.DpiX
+        $dpiY = [int]$g.DpiY
+        $g.Dispose()
+        return @($dpiX, $dpiY)
+    }
+    catch {
+        Write-Verbose "Fallback DPI retrieval failed: $($_.Exception.Message)"
+        return @(96,96)
+    }
+}
+
 function Capture-Region {
     param(
         [int]$left,
@@ -139,9 +158,22 @@ foreach ($r in $Rects) {
     # Treat W/H as DIP (device-independent pixels). Get monitor DPI at rect center and compute expected pixel size.
     $centerX = [int]($r.L + ($r.W / 2))
     $centerY = [int]($r.T + ($r.H / 2))
-    $dpis = [Shuyu.Tests.DpiUtil]::GetDpiForPoint($centerX, $centerY)
-    $dpiX = $dpis[0]
-    $dpiY = $dpis[1]
+    if ($DpiHelperAvailable) {
+        try {
+            $dpis = [Shuyu.Tests.DpiUtil]::GetDpiForPoint($centerX, $centerY)
+            $dpiX = $dpis[0]
+            $dpiY = $dpis[1]
+        }
+        catch {
+            Write-Verbose "Native DPI helper failed for point ($centerX,$centerY): $($_.Exception.Message)"
+            $d = Get-DpiForPointFallback -x $centerX -y $centerY
+            $dpiX = $d[0]; $dpiY = $d[1]
+        }
+    }
+    else {
+        $d = Get-DpiForPointFallback -x $centerX -y $centerY
+        $dpiX = $d[0]; $dpiY = $d[1]
+    }
     $scaleX = $dpiX / 96.0
     $scaleY = $dpiY / 96.0
 
