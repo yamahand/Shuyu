@@ -13,6 +13,7 @@ namespace Shuyu.Service
     public class AsyncScreenCaptureService : IDisposable
     {
         private bool _disposed = false;
+        private readonly IImageCapture _imageCapture;
 
         /// <summary>
         /// キャプチャ結果を格納する構造体
@@ -55,6 +56,13 @@ namespace Shuyu.Service
         /// <param name="progress">進行状況レポーター</param>
         /// <param name="cancellationToken">キャンセレーショントークン</param>
         /// <returns>キャプチャ結果</returns>
+        public AsyncScreenCaptureService() : this(new SystemDrawingImageCapture()) { }
+
+        public AsyncScreenCaptureService(IImageCapture? imageCapture)
+        {
+            _imageCapture = imageCapture ?? new SystemDrawingImageCapture();
+        }
+
         public async Task<CaptureResult> CaptureRegionAsync(
             Rectangle region,
             ProgressReporter? progress = null,
@@ -82,17 +90,17 @@ namespace Shuyu.Service
 
                 progress?.Invoke(25, "スクリーンキャプチャ中...");
 
-                // バックグラウンドスレッドでキャプチャ実行
-                var bitmap = await Task.Run(() => CaptureScreenRegion(region, cancellationToken), cancellationToken);
-                
+                // バックグラウンドスレッドでキャプチャ実行（実装は IImageCapture に委譲）
+                var bitmap = await Task.Run(() => _imageCapture.CaptureRegionToBitmap(region, cancellationToken), cancellationToken);
+
                 if (bitmap == null)
                     return new CaptureResult("スクリーンキャプチャに失敗しました");
 
                 progress?.Invoke(75, "画像変換中...");
 
-                // BitmapSourceに変換
-                var bitmapSource = await Task.Run(() => ConvertToBitmapSource(bitmap, cancellationToken), cancellationToken);
-                
+                // BitmapSourceに変換（IImageCapture 実装に委譲）
+                var bitmapSource = await Task.Run(() => _imageCapture.ConvertBitmapToBitmapSource(bitmap, cancellationToken), cancellationToken);
+
                 // 元のBitmapを破棄
                 bitmap.Dispose();
 
