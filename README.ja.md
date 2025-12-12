@@ -87,3 +87,30 @@ dotnet build --configuration Release
 ## 📞 サポート
 
 問題が発生した場合や質問がある場合は、GitHubで[issueを開いて](../../issues)ください。
+
+## 🧪 DPI テスト自動化
+
+このリポジトリには、ディスプレイの DPI（スケーリング）を考慮したスクリーンキャプチャの検証を自動化する PowerShell スクリプトが含まれています。
+
+- スクリプト: `scripts\dpi_test.ps1`
+- 目的: 複数モニタ・DPI 環境で、指定した矩形（DIP 単位）を実際にピクセル単位でキャプチャできるか検証します。モニタごとの DPI を順に取得し（多段フォールバック）、期待サイズと実際の画像サイズを比較します。
+
+使い方:
+
+```powershell
+# ワークツリーのルートで実行
+pwsh -File .\scripts\dpi_test.ps1 -OutDir .\artifacts\dpi-tests
+```
+
+出力:
+- `artifacts\dpi-tests` に PNG ファイルを保存します（`virtual_full.png` など）。
+- 実行ログに各矩形の期待ピクセルサイズと実際の取得サイズを表示します。
+
+注意点:
+- スクリプトは `GetDpiForMonitor`（`shcore.dll`）、`GetDpiForWindow`、`GetDeviceCaps`、`Graphics.DpiX/DpiY` の順で DPI を取得する多段フォールバックを実装していますが、環境や OS によって API の可用性が異なります。
+- CI ランナーで実行する場合は GUI セッションが必要になるため、通常の GitHub Actions のホスト（ヘッドレス）では動作しません。Windows GUI を使える runner または専用 VM での実行を推奨します。
+- 必要に応じて `-Verbose` フラグを付けると詳細な取得経路（どの API を使ったか）を確認できます。
+
+改善案:
+- CI での自動化を行う場合は、結果の PNG をアーティファクトとしてアップロードするワークフローを用意してください。
+
