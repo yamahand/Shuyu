@@ -68,17 +68,22 @@ public class TrayService : IDisposable
         InitializeTrayIcon();
         
         // HotkeyManager を作成してホットキー機能を初期化
-        _hotkeyManager = new HotkeyManager();
+        	_hotkeyManager = new HotkeyManager();
+            LogService.LogInfo("[TrayService] HotkeyManager created");
         
         // 保存された設定を読み込み
         var settings = UserSettingsStore.Load();
         _useLowLevelHook = settings.useLowLevelHook;
         
-        // 読み込んだ設定に応じてホットキーモードを適用
-        _hotkeyManager.ApplyUseLowLevelHook(_useLowLevelHook, true);
+        	// 読み込んだ設定に応じてホットキーモードを適用
+        	LogService.LogInfo($"[TrayService] Applying saved hook setting: useLowLevelHook={_useLowLevelHook}");
+        	_hotkeyManager.ApplyUseLowLevelHook(_useLowLevelHook, true);
         
-        // ホットキー押下時にキャプチャコールバックを呼び出すよう設定
-        _hotkeyManager.HotkeyPressed += () => _onCaptureRequested?.Invoke();
+        	// ホットキー押下時にキャプチャコールバックを呼び出すよう設定
+        	_hotkeyManager.HotkeyPressed += () => {
+            LogService.LogDebug("[TrayService] HotkeyPressed event received");
+            _onCaptureRequested?.Invoke();
+        };
     }
 
     /// <summary>
