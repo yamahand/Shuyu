@@ -34,16 +34,72 @@ namespace Shuyu.Tests {
         [DllImport("shcore.dll")]
         private static extern int GetDpiForMonitor(IntPtr hmonitor, int dpiType, out uint dpiX, out uint dpiY);
 
-        public static int[] GetDpiForPoint(int x, int y) {
+        [DllImport("user32.dll")]
+        private static extern IntPtr WindowFromPoint(POINT pt);
+
+        [DllImport("user32.dll")]
+        private static extern uint GetDpiForWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetDC(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
+
+        [DllImport("gdi32.dll")]
+        private static extern int GetDeviceCaps(IntPtr hdc, int nIndex);
+
+        private const int LOGPIXELSX = 88;
+        private const int LOGPIXELSY = 90;
+
+        // Try per-monitor API
+        public static int[] TryGetDpiForMonitor(int x, int y) {
             try {
                 var pt = new POINT(x,y);
                 var mon = MonitorFromPoint(pt, 2); // MONITOR_DEFAULTTONEAREST
-                if (mon == IntPtr.Zero) return new int[]{96,96};
+                if (mon == IntPtr.Zero) return new int[]{-1,-1};
                 if (GetDpiForMonitor(mon, MDT_EFFECTIVE_DPI, out uint dx, out uint dy) == 0) {
                     return new int[]{(int)dx, (int)dy};
                 }
             } catch { }
-            return new int[]{96,96};
+            return new int[]{-1,-1};
+        }
+
+        // Try GetDpiForWindow via window under point
+        public static int[] TryGetDpiForWindow(int x, int y) {
+            try {
+                var pt = new POINT(x,y);
+                var hwnd = WindowFromPoint(pt);
+                if (hwnd == IntPtr.Zero) return new int[]{-1,-1};
+                uint d = GetDpiForWindow(hwnd);
+                if (d != 0) return new int[]{(int)d, (int)d};
+            } catch { }
+            return new int[]{-1,-1};
+        }
+
+        // Try GetDeviceCaps via HDC
+        public static int[] TryGetDeviceCaps(int x, int y) {
+            IntPtr hdc = IntPtr.Zero;
+            try {
+                var pt = new POINT(x,y);
+                var hwnd = WindowFromPoint(pt);
+                if (hwnd == IntPtr.Zero) {
+                    hdc = GetDC(IntPtr.Zero);
+                } else {
+                    hdc = GetDC(hwnd);
+                }
+                if (hdc == IntPtr.Zero) return new int[]{-1,-1};
+                int rx = GetDeviceCaps(hdc, LOGPIXELSX);
+                int ry = GetDeviceCaps(hdc, LOGPIXELSY);
+                return new int[]{rx,ry};
+            }
+            catch { }
+            finally {
+                if (hdc != IntPtr.Zero) {
+                    ReleaseDC(IntPtr.Zero, hdc);
+                }
+            }
+            return new int[]{-1,-1};
         }
     }
 }
@@ -52,7 +108,7 @@ namespace Shuyu.Tests {
         $DpiHelperAvailable = $true
     }
     catch {
-        Write-Warning "Could not compile DPI helper (GetDpiForMonitor). Falling back to 96 DPI. Details: $($_.Exception.Message)"
+        Write-Warning "Could not compile DPI helper (GetDpiForMonitor/GetDpiForWindow). Falling back to managed methods. Details: $($_.Exception.Message)"
         $DpiHelperAvailable = $false
     }
 }
@@ -158,21 +214,30 @@ foreach ($r in $Rects) {
     # Treat W/H as DIP (device-independent pixels). Get monitor DPI at rect center and compute expected pixel size.
     $centerX = [int]($r.L + ($r.W / 2))
     $centerY = [int]($r.T + ($r.H / 2))
+    $dpiSource = ""
     if ($DpiHelperAvailable) {
         try {
-            $dpis = [Shuyu.Tests.DpiUtil]::GetDpiForPoint($centerX, $centerY)
-            $dpiX = $dpis[0]
-            $dpiY = $dpis[1]
+            $d = [Shuyu.Tests.DpiUtil]::TryGetDpiForMonitor($centerX, $centerY)
+            if ($d[0] -gt 0) {
+                $dpiX = $d[0]; $dpiY = $d[1]; $dpiSource = 'GetDpiForMonitor'
+            }
+            else {
+                $d2 = [Shuyu.Tests.DpiUtil]::TryGetDpiForWindow($centerX, $centerY)
+                if ($d2[0] -gt 0) { $dpiX = $d2[0]; $dpiY = $d2[1]; $dpiSource = 'GetDpiForWindow' }
+                else {
+                    $d3 = [Shuyu.Tests.DpiUtil]::TryGetDeviceCaps($centerX, $centerY)
+                    if ($d3[0] -gt 0) { $dpiX = $d3[0]; $dpiY = $d3[1]; $dpiSource = 'GetDeviceCaps' }
+                }
+            }
         }
         catch {
-            Write-Verbose "Native DPI helper failed for point ($centerX,$centerY): $($_.Exception.Message)"
-            $d = Get-DpiForPointFallback -x $centerX -y $centerY
-            $dpiX = $d[0]; $dpiY = $d[1]
+            Write-Verbose "Native DPI helper threw: $($_.Exception.Message)"
         }
     }
-    else {
+
+    if (-not $dpiSource) {
         $d = Get-DpiForPointFallback -x $centerX -y $centerY
-        $dpiX = $d[0]; $dpiY = $d[1]
+        $dpiX = $d[0]; $dpiY = $d[1]; $dpiSource = 'GraphicsFallback'
     }
     $scaleX = $dpiX / 96.0
     $scaleY = $dpiY / 96.0
