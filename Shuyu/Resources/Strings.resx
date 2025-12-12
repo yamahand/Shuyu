@@ -151,4 +151,32 @@
   <data name="LanguageSystem" xml:space="preserve">
     <value>システム設定</value>
   </data>
+  
+  <!-- File filter strings -->
+  <data name="PngImageFilter" xml:space="preserve">
+    <value>PNG 画像 (*.png)|*.png</value>
+  </data>
+  <data name="JpegImageFilter" xml:space="preserve">
+    <value>JPEG 画像 (*.jpg;*.jpeg)|*.jpg;*.jpeg</value>
+  </data>
+  <data name="BmpImageFilter" xml:space="preserve">
+    <value>Bitmap 画像 (*.bmp)|*.bmp</value>
+  </data>
+  <data name="DdsImageFilter" xml:space="preserve">
+    <value>DDS 画像 (*.dds)|*.dds</value>
+  </data>
+  <data name="AllFilesFilter" xml:space="preserve">
+    <value>すべてのファイル (*.*)|*.*</value>
+  </data>
+  
+  <!-- Log messages -->
+  <data name="InvalidFilePathSpecified" xml:space="preserve">
+    <value>無効なファイルパスが指定されました: {0}</value>
+  </data>
+  <data name="UnsupportedFileExtension" xml:space="preserve">
+    <value>未対応の拡張子です: {0}</value>
+  </data>
+  <data name="WindowCreatedAt" xml:space="preserve">
+    <value>作成時</value>
+  </data>
 </root>

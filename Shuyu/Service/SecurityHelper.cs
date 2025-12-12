@@ -14,7 +14,9 @@ namespace Shuyu.Service
     public static class SecurityHelper
     {
         private static readonly string[] AllowedImageExtensions = { ".png", ".jpg", ".jpeg", ".bmp", ".dds" };
-        private static readonly Regex InvalidPathCharsRegex = new(@"[<>:""|?*]", RegexOptions.Compiled);
+        // Windows では : はドライブレター（C:）で有効なので、ドライブレター以外での : をチェック
+        private static readonly Regex InvalidPathCharsRegex = new(@"[<>""|?*]", RegexOptions.Compiled);
+        private static readonly Regex InvalidColonRegex = new(@"(?<!^[a-zA-Z]):", RegexOptions.Compiled);
         private static readonly string ApplicationDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Shuyu");
 
         /// <summary>
@@ -35,6 +37,10 @@ namespace Shuyu.Service
                 
                 // 危険な文字をチェック
                 if (InvalidPathCharsRegex.IsMatch(filePath))
+                    return false;
+                
+                // コロン（:）はドライブレター以外では無効
+                if (InvalidColonRegex.IsMatch(filePath))
                     return false;
 
                 // 相対パス攻撃をチェック

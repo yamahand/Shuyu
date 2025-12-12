@@ -320,5 +320,77 @@ namespace Shuyu.Resources {
                 return ResourceManager.GetString("LanguageSystem", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   すべてのファイル (*.*)|*.* に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string AllFilesFilter {
+            get {
+                return ResourceManager.GetString("AllFilesFilter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Bitmap 画像 (*.bmp)|*.bmp に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string BmpImageFilter {
+            get {
+                return ResourceManager.GetString("BmpImageFilter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   DDS 画像 (*.dds)|*.dds に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string DdsImageFilter {
+            get {
+                return ResourceManager.GetString("DdsImageFilter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   無効なファイルパスが指定されました: {0} に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string InvalidFilePathSpecified {
+            get {
+                return ResourceManager.GetString("InvalidFilePathSpecified", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   JPEG 画像 (*.jpg;*.jpeg)|*.jpg;*.jpeg に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string JpegImageFilter {
+            get {
+                return ResourceManager.GetString("JpegImageFilter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   PNG 画像 (*.png)|*.png に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string PngImageFilter {
+            get {
+                return ResourceManager.GetString("PngImageFilter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   未対応の拡張子です: {0} に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string UnsupportedFileExtension {
+            get {
+                return ResourceManager.GetString("UnsupportedFileExtension", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   作成時 に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string WindowCreatedAt {
+            get {
+                return ResourceManager.GetString("WindowCreatedAt", resourceCulture);
+            }
+        }
     }
 }

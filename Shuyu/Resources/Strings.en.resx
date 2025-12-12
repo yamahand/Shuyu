@@ -151,4 +151,32 @@
   <data name="LanguageSystem" xml:space="preserve">
     <value>System Default</value>
   </data>
+  
+  <!-- File filter strings -->
+  <data name="PngImageFilter" xml:space="preserve">
+    <value>PNG Images (*.png)|*.png</value>
+  </data>
+  <data name="JpegImageFilter" xml:space="preserve">
+    <value>JPEG Images (*.jpg;*.jpeg)|*.jpg;*.jpeg</value>
+  </data>
+  <data name="BmpImageFilter" xml:space="preserve">
+    <value>Bitmap Images (*.bmp)|*.bmp</value>
+  </data>
+  <data name="DdsImageFilter" xml:space="preserve">
+    <value>DDS Images (*.dds)|*.dds</value>
+  </data>
+  <data name="AllFilesFilter" xml:space="preserve">
+    <value>All Files (*.*)|*.*</value>
+  </data>
+  
+  <!-- Log messages -->
+  <data name="InvalidFilePathSpecified" xml:space="preserve">
+    <value>Invalid file path specified: {0}</value>
+  </data>
+  <data name="UnsupportedFileExtension" xml:space="preserve">
+    <value>Unsupported file extension: {0}</value>
+  </data>
+  <data name="WindowCreatedAt" xml:space="preserve">
+    <value>Created at</value>
+  </data>
 </root>

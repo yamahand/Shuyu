@@ -81,7 +81,7 @@ namespace Shuyu
             };
 
             // 生成時の座標をログ出力（DIP と 物理px）
-            LogPosition("作成時");
+            LogPosition(Strings.WindowCreatedAt);
 
             this.Closed += (_, __) => PinnedWindowManager.Unregister(this);
         }
@@ -122,11 +122,11 @@ namespace Shuyu
                 FileName = $"pinned_{DateTime.Now:yyyyMMdd_HHmmss}.{ext}",
                 Filter = ext switch
                 {
-                    "png" => "PNG 画像 (*.png)|*.png",
-                    "jpg" => "JPEG 画像 (*.jpg;*.jpeg)|*.jpg;*.jpeg",
-                    "bmp" => "Bitmap 画像 (*.bmp)|*.bmp",
-                    "dds" => "DDS 画像 (*.dds)|*.dds",
-                    _ => "すべてのファイル (*.*)|*.*"
+                    "png" => Strings.PngImageFilter,
+                    "jpg" => Strings.JpegImageFilter,
+                    "bmp" => Strings.BmpImageFilter,
+                    "dds" => Strings.DdsImageFilter,
+                    _ => Strings.AllFilesFilter
                 },
                 DefaultExt = ext
             };
@@ -136,7 +136,7 @@ namespace Shuyu
                 // セキュリティ検証を追加
                 if (!SecurityHelper.IsValidFilePath(dlg.FileName))
                 {
-                    LogService.LogWarning($"無効なファイルパスが指定されました: {SecurityHelper.SanitizeLogMessage(dlg.FileName)}");
+                    LogService.LogWarning(string.Format(Strings.InvalidFilePathSpecified, SecurityHelper.SanitizeLogMessage(dlg.FileName)));
                     System.Windows.MessageBox.Show(this, Strings.InvalidFilePath, Strings.Error, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
@@ -202,7 +202,7 @@ namespace Shuyu
                         break;
                     }
                 default:
-                    throw new NotSupportedException($"未対応の拡張子です: {ext}");
+                    throw new NotSupportedException(string.Format(Strings.UnsupportedFileExtension, ext));
             }
         }
 
