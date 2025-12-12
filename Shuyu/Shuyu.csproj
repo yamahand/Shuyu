@@ -12,6 +12,15 @@
 		<Version>0.1.0</Version>
 	</PropertyGroup>
 
+  <!-- Conditional Define: set UseBitBlt=true when building with -p:UseBitBlt=true -->
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(UseBitBlt)' == 'true'">
+    <DefineConstants>$(DefineConstants);USE_BITBLT</DefineConstants>
+  </PropertyGroup>
+
 	<ItemGroup>
 	  <None Remove="Resources\Icons\shuyu.ico" />
 	  <None Remove="Resources\Icons\tray.ico" />

@@ -56,7 +56,13 @@ namespace Shuyu.Service
         /// <param name="progress">進行状況レポーター</param>
         /// <param name="cancellationToken">キャンセレーショントークン</param>
         /// <returns>キャプチャ結果</returns>
-        public AsyncScreenCaptureService() : this(new SystemDrawingImageCapture()) { }
+        public AsyncScreenCaptureService() : this(
+#if USE_BITBLT
+            new BitBltImageCapture()
+#else
+            new SystemDrawingImageCapture()
+#endif
+        ) { }
 
         public AsyncScreenCaptureService(IImageCapture? imageCapture)
         {
