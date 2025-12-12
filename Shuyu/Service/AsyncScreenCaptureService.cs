@@ -67,6 +67,11 @@ namespace Shuyu.Service
         public AsyncScreenCaptureService(IImageCapture? imageCapture)
         {
             _imageCapture = imageCapture ?? new SystemDrawingImageCapture();
+            try
+            {
+                LogService.LogInfo($"ImageCapture implementation: {_imageCapture.GetType().FullName}");
+            }
+            catch { }
         }
 
         public async Task<CaptureResult> CaptureRegionAsync(
