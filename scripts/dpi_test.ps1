@@ -10,11 +10,16 @@ function Ensure-OutputDir {
     if (-not (Test-Path $d)) { New-Item -ItemType Directory -Path $d | Out-Null }
 }
 
-Add-Type -AssemblyName System.Drawing
-Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing -ErrorAction Stop
+Add-Type -AssemblyName System.Windows.Forms -ErrorAction Stop
 
 # Add native DPI helper via C# to call GetDpiForMonitor
-Add-Type -TypeDefinition @"
+# Only add the type if it's not already loaded. Use try/catch to handle environments
+# where shcore.dll or compilation may not be available.
+$DpiHelperAvailable = $false
+if (-not ([type]::GetType("Shuyu.Tests.DpiUtil", $false, $false))) {
+    try {
+        Add-Type -TypeDefinition @"
 using System;
 using System.Runtime.InteropServices;
 namespace Shuyu.Tests {
@@ -42,7 +47,19 @@ namespace Shuyu.Tests {
         }
     }
 }
-"@ -Language CSharp
+"@ -Language CSharp -ErrorAction Stop
+        Write-Verbose "DPI helper type loaded."
+        $DpiHelperAvailable = $true
+    }
+    catch {
+        Write-Warning "Could not compile DPI helper (GetDpiForMonitor). Falling back to 96 DPI. Details: $($_.Exception.Message)"
+        $DpiHelperAvailable = $false
+    }
+}
+else {
+    Write-Verbose "DPI helper type already loaded."
+    $DpiHelperAvailable = $true
+}
 
 function Capture-Region {
     param(
@@ -52,6 +69,17 @@ function Capture-Region {
         [int]$height,
         [string]$outPath
     )
+    # Validate dimensions before creating Bitmap to avoid exceptions
+    if ($width -lt 1 -or $height -lt 1) {
+        throw "Invalid capture size ${width}x${height}"
+    }
+    # Cap maximum to avoid excessive allocations (adjust as needed)
+    $maxDim = 8192
+    if ($width -gt $maxDim -or $height -gt $maxDim) {
+        Write-Warning "Requested capture ${width}x${height} exceeds max ${maxDim} - capping."
+        $width = [int]([Math]::Min($width, $maxDim))
+        $height = [int]([Math]::Min($height, $maxDim))
+    }
 
     $bmp = New-Object System.Drawing.Bitmap($width, $height)
     $g = $null
