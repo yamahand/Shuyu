@@ -1,10 +1,4 @@
-﻿using System.Configuration;
-using System.Data;
-using System.Windows;
-
-using WpfApp = System.Windows.Application;
-using WinForms = System.Windows.Forms;
-using System.Drawing;
+﻿using WpfApp = System.Windows.Application;
 
 namespace Shuyu
 {

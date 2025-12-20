@@ -1,13 +1,6 @@
-﻿using System;
-using System.Windows;
-using Application = System.Windows.Application;
+﻿using Application = System.Windows.Application;
 using Shuyu; // SettingsWindow参照用
-using System.Windows.Forms; // NotifyIcon用
-using System.Drawing;       // Icon用
 using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Windows.Interop;
-using System.Diagnostics;
 using Shuyu.Service; // 追加: PinnedWindowManager 参照
 using Shuyu.Resources;
 

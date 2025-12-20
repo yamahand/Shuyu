@@ -86,30 +86,30 @@ namespace Shuyu
             this.Closed += (_, __) => PinnedWindowManager.Unregister(this);
         }
 
-        private ContextMenu BuildContextMenu()
+        private System.Windows.Controls.ContextMenu BuildContextMenu()
         {
-            var menu = new ContextMenu();
+            var menu = new System.Windows.Controls.ContextMenu();
             
             // クリップボードにコピー
             menu.Items.Add(CreateItem(Strings.CopyToClipboard, CopyToClipboard));
-            menu.Items.Add(new Separator());
+            menu.Items.Add(new System.Windows.Controls.Separator());
             
             // 保存メニュー（ネスト化）
-            var saveMenu = new MenuItem { Header = Strings.Save };
+            var saveMenu = new System.Windows.Controls.MenuItem { Header = Strings.Save };
             saveMenu.Items.Add(CreateItem("PNG", () => SaveWithDialog("png")));
             saveMenu.Items.Add(CreateItem("JPEG", () => SaveWithDialog("jpg")));
             saveMenu.Items.Add(CreateItem("BMP", () => SaveWithDialog("bmp")));
             saveMenu.Items.Add(CreateItem("DDS", () => SaveWithDialog("dds")));
             menu.Items.Add(saveMenu);
             
-            menu.Items.Add(new Separator());
+            menu.Items.Add(new System.Windows.Controls.Separator());
             menu.Items.Add(CreateItem(Strings.Close, () => this.Close()));
             return menu;
         }
 
-        private MenuItem CreateItem(string header, Action action)
+        private System.Windows.Controls.MenuItem CreateItem(string header, Action action)
         {
-            var item = new MenuItem { Header = header };
+            var item = new System.Windows.Controls.MenuItem { Header = header };
             item.Click += (_, __) => action();
             return item;
         }

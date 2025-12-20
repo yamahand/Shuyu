@@ -1,9 +1,5 @@
-﻿using System;
-using System.Runtime.InteropServices;
-using System.Threading;
+﻿using System.Runtime.InteropServices;
 using System.Windows.Interop;
-using System.Diagnostics.CodeAnalysis;
-using System.Windows.Forms;
 using System.Diagnostics;
 using Shuyu.Service;
 
