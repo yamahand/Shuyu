@@ -33,7 +33,7 @@ cd Shuyu
 dotnet build --configuration Release
 ```
 
-Open [Shuyu.sln](Shuyu.sln) in Visual Studio 2022 or later for development.
+Open [Shuyu.slnx](Shuyu.slnx) in Visual Studio 2022 or later for development.
 
 ## DPI test helper
 

@@ -20,10 +20,10 @@ jobs:
         dotnet-version: '9.0.x'
 
     - name: Restore
-      run: dotnet restore Shuyu.sln
+      run: dotnet restore Shuyu.slnx
 
     - name: Build
-      run: dotnet build Shuyu.sln -c Release --no-restore
+      run: dotnet build Shuyu.slnx -c Release --no-restore
 
     - name: Publish (win-x64)
       run: |

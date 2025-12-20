@@ -12,7 +12,7 @@ on:
 env:
   DOTNET_VERSION: '10.0.x'
   PROJECT_NAME: 'Shuyu'
-  SOLUTION_FILE: 'Shuyu.sln'
+  SOLUTION_FILE: 'Shuyu.slnx'
 
 jobs:
   build-and-release:

@@ -18,7 +18,7 @@
 - 対応ランタイム: `win-x64`, `win-arm64` を想定
 
 ## リポジトリ内の重要ファイル
-- `Shuyu.sln` — ソリューション
+- `Shuyu.slnx` — ソリューション（IDE ソリューションエクスプローラー用）
 - `Shuyu/Shuyu.csproj` — プロジェクト設定（WPF、リソース、パッケージ）
 - `Shuyu/App.xaml(.cs)` — アプリケーションエントリ
 - `Shuyu/MainWindow.xaml.cs` — メインウィンドウ（通常非表示、トレイで動作）

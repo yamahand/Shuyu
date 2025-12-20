@@ -42,7 +42,7 @@ HotkeyManager.InstallLowLevelHook でフックが失敗した場合に、
 - ビルドが成功することを確認してください：
 
 ```powershell
-dotnet build Shuyu.sln -c Release
+dotnet build Shuyu.slnx -c Release
 ```
 
 ## 小さな注意
