@@ -10,7 +10,7 @@ on:
       - 'LICENSE'
 
 env:
-  DOTNET_VERSION: '9.0.x'
+  DOTNET_VERSION: '10.0.x'
   PROJECT_NAME: 'Shuyu'
   SOLUTION_FILE: 'Shuyu.sln'
 
@@ -148,7 +148,7 @@ jobs:
         
         System Requirements:
         - Windows 10/11
-        - .NET 9.0 Runtime (フレームワーク依存版の場合)
+        - .NET 10.0 Runtime (フレームワーク依存版の場合)
         
         インストール方法:
         1. ZIPファイルを任意のフォルダに展開
@@ -245,7 +245,7 @@ jobs:
           - ビルド番号: ${{ github.run_number }}
           - ビルド日時: ${{ github.event.head_commit.timestamp }}
           - コミット: [`${{ steps.version.outputs.SHORT_SHA }}`](https://github.com/yamahand/Shuyu/commit/${{ github.sha }})
-          - .NET バージョン: 9.0
+          - .NET バージョン: 10.0
           - 対応アーキテクチャ: x64, ARM64
           
           ---

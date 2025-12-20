@@ -1,105 +1,74 @@
 # Shuyu
 
-A lightweight and efficient screen capture application for Windows, built with WPF and .NET 9.
+Shuyu is a lightweight, open-source screen-capture utility for Windows, implemented with WPF and .NET 10.
 
-## 🌐 Languages
-- [English](README.md)
-- [日本語](README.ja.md)
+## Key Features
 
-## 📸 Features
+- Capture arbitrary regions with an overlay selection UI
+- System tray integration with context menu and settings
+- Pin captured images as always-on-top windows for quick reference
+- Configurable global hotkeys for fast captures
+- Works across multiple monitors and handles different DPI scalings
+- Built-in debug logging for troubleshooting
 
-- **Screen Capture**: Capture selected areas of your screen with precision
-- **Overlay Selection**: Intuitive overlay interface for selecting capture regions
-- **System Tray Integration**: Runs quietly in the system tray for quick access
-- **Pinned Windows**: Pin captured images for easy reference
-- **Hotkey Support**: Quick capture with customizable keyboard shortcuts
-- **Multiple Display Support**: Works seamlessly with multi-monitor setups
-- **Debug Logging**: Built-in logging system for troubleshooting
+## Requirements
 
-## 🚀 Getting Started
+- Windows 10 or later
+- .NET 10 runtime (or SDK to build from source)
 
-### Prerequisites
+## Quick Start
 
-- Windows 10/11
-- .NET 9.0 Runtime
+1. Download a release from the Releases page and extract it.
+2. Run `Shuyu.exe` — the app will appear in the system tray.
 
-### Installation
+Right-click the tray icon to start a capture, open Settings, or exit the app.
 
-1. Download the latest release from the [Releases](../../releases) page
-2. Extract the archive to your desired location
-3. Run `Shuyu.exe`
+During a capture: click-and-drag to select a region; right-click to cancel.
 
-### Building from Source
+## Build from Source
 
-```bash
+```powershell
 git clone https://github.com/yourusername/Shuyu.git
 cd Shuyu
 dotnet build --configuration Release
 ```
 
-## 🎯 Usage
+Open [Shuyu.sln](Shuyu.sln) in Visual Studio 2022 or later for development.
 
-1. Launch Shuyu - it will appear in your system tray
-2. Right-click the tray icon to access options:
-   - **Capture**: Start a new screen capture
-   - **Settings**: Configure application preferences
-   - **Exit**: Close the application
-3. During capture:
-   - Click and drag to select the area you want to capture
-   - Right-click to cancel
-   - The captured image will be saved and can be pinned for reference
+## DPI test helper
 
-## ⚙️ Configuration
+This repository includes a PowerShell helper at `scripts\dpi_test.ps1` to validate captures in multi-monitor and DPI-scaled environments. It attempts multiple DPI-retrieval methods (per-monitor APIs, window DPI, device caps, and GDI+ fallbacks), computes expected pixel sizes from DIP values, captures the screen and compares results.
 
-The application stores settings automatically. You can access configuration through the Settings window from the system tray menu.
-
-## 🏗️ Architecture
-
-- **WPF Application**: Modern Windows desktop application framework
-- **Service Layer**: Modular services for capture, logging, and system integration
-- **Async Operations**: Non-blocking screen capture and file operations
-- **Multi-DPI Aware**: Proper handling of different display scaling
-
-### Key Components
-
-- `CaptureOverlayWindow`: Full-screen overlay for area selection
-- `AsyncScreenCaptureService`: Handles screen capture operations
-- `TrayService`: System tray integration and context menu
-- `PinnedWindowManager`: Manages pinned capture windows
-- `HotkeyManager`: Global hotkey registration and handling
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
-
-### Development Setup
-
-1. Clone the repository
-2. Open `Shuyu.sln` in Visual Studio 2022 or later
-3. Build and run the project
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Built with WPF and .NET 9
-- Uses System.Drawing.Common for image processing
-- Inspired by modern screen capture tools
-
-## 📞 Support
-
-If you encounter any issues or have questions, please [open an issue](../../issues) on GitHub.
-
-Note about DPI test script:
-
-- There is a small PowerShell helper at `scripts\dpi_test.ps1` that exercises screen capture in multi-monitor and DPI-scaled environments. It computes expected pixel sizes from DIP values using per-monitor DPI (with fallbacks) and compares the captured image sizes.
-- Run it from the repository root:
+Run from the repository root (requires an interactive desktop session):
 
 ```powershell
-pwsh -File .\scripts\dpi_test.ps1 -OutDir .\artifacts\dpi-tests
+pwsh -File .\scripts\dpi_test.ps1 -OutDir .\artifacts\dpi-tests -Verbose
 ```
 
-- The script requires a GUI session (it uses screen capture APIs) and may not run on headless CI runners. Use a Windows runner or a VM with desktop session for CI execution. Add `-Verbose` for detailed logs (which show which DPI method was used).
+The script writes PNG samples to `artifacts/dpi-tests` and logs the expected vs actual pixel sizes.
+
+## Architecture (brief)
+
+- `CaptureOverlayWindow`: selection overlay and UX
+- `AsyncScreenCaptureService`: captures screen regions asynchronously
+- `TrayService`: tray icon, context menu and commands
+- `PinnedWindowManager`: creates/maintains pinned capture windows
+- `HotkeyManager`: global hotkey registration and handling
+
+The app uses async patterns for non-blocking capture and file I/O, and includes logging to help diagnose environment-specific issues (particularly DPI and multi-monitor setups).
+
+## Contributing
+
+- Open issues for design or feature discussions before large changes.
+- Pull requests are welcome; follow the existing code style and keep changes focused.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+## License
+
+This project is licensed under the MIT License — see [LICENSE](LICENSE).
+
+## Support
+
+If you have problems or questions, please open an issue on GitHub.
 
