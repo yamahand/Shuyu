@@ -9,7 +9,7 @@
 
 前提条件:
 - Windows 10/11
-- .NET 9 runtime（アプリ実行用）
+- .NET 10 runtime（アプリ実行用）
 - PowerShell (Windows PowerShell または PowerShell 7)
 
 ファイル:
