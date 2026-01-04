@@ -18,8 +18,8 @@ namespace Shuyu
         public SettingsWindow()
         {
             InitializeComponent();
-            LoadCurrentSettings();
             ApplyLocalization();
+            LoadCurrentSettings();
             _isInitializing = false;
         }
         
