@@ -202,7 +202,14 @@ namespace Shuyu
                             LogService.LogWarning("[HotkeyManager] Fallback RegisterHotKey failed after exception");
                         }
                     }
-                    catch { }
+                    catch (Exception fallbackEx)
+                    {
+#if DEBUG
+                        LogService.LogException(fallbackEx, "[HotkeyManager] Fallback RegisterHotKey threw exception");
+#else
+                        LogService.LogWarning($"[HotkeyManager] Fallback RegisterHotKey threw exception: {SecurityHelper.SanitizeLogMessage(fallbackEx.Message)}");
+#endif
+                    }
                     LogService.LogInfo("[HotkeyManager] InstallLowLevelHook failed and fallback attempted");
                     return false; // いずれも失敗
                 }
