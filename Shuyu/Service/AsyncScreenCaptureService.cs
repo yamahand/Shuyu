@@ -71,7 +71,10 @@ namespace Shuyu.Service
             {
                 LogService.LogInfo($"ImageCapture implementation: {_imageCapture.GetType().FullName}");
             }
-            catch { }
+            catch (Exception ex)
+            {
+                LogService.LogWarning($"ImageCapture logging failed: {SecurityHelper.SanitizeLogMessage(ex.Message)}");
+            }
         }
 
         public async Task<CaptureResult> CaptureRegionAsync(
