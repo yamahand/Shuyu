@@ -162,19 +162,18 @@ namespace Shuyu
                         var err = Marshal.GetLastWin32Error();
                         LogService.LogError($"[HotkeyManager] Install hook failed. GetLastError={err}");
 
-                        // フックのインストールに失敗した場合は安全にフォールバックとして RegisterHotKey を試みる
+                        // フォールバックを試みる
                         var ok = RegisterShiftPrintScreenHotkey();
+                        useLowLevelHook = false;
                         if (ok)
                         {
                             LogService.LogInfo("[HotkeyManager] Fallback: Registered Shift+PrintScreen via RegisterHotKey");
-                            useLowLevelHook = false;
-                            return false;
+                            return true; // フォールバック成功ならホットキーは機能するので true
                         }
                         else
                         {
                             LogService.LogWarning("[HotkeyManager] Fallback RegisterHotKey also failed");
-                            useLowLevelHook = false;
-                            return false;
+                            return false; // どちらも失敗
                         }
                     }
 
@@ -190,12 +189,13 @@ namespace Shuyu
 #else
                     LogService.LogWarning($"[HotkeyManager] InstallLowLevelHook exception: {SecurityHelper.SanitizeLogMessage(ex.Message)}");
 #endif
-                    // インストールに失敗した場合は RegisterHotKey でフォールバック
+                    useLowLevelHook = false;
                     try
                     {
                         if (RegisterShiftPrintScreenHotkey())
                         {
                             LogService.LogInfo("[HotkeyManager] Fallback: Registered Shift+PrintScreen via RegisterHotKey after exception");
+                            return true; // フォールバック成功
                         }
                         else
                         {
@@ -203,9 +203,8 @@ namespace Shuyu
                         }
                     }
                     catch { }
-                    useLowLevelHook = false;
                     LogService.LogInfo("[HotkeyManager] InstallLowLevelHook failed and fallback attempted");
-                    return false;
+                    return false; // いずれも失敗
                 }
             }
         }
