@@ -23,17 +23,9 @@ namespace Shuyu.Service
         {
             try
             {
-                CultureInfo culture;
-                
-                if (string.IsNullOrEmpty(languageCode))
-                {
-                    // システム設定を使用
-                    culture = CultureInfo.CurrentUICulture;
-                }
-                else
-                {
-                    culture = new CultureInfo(languageCode);
-                }
+                var culture = string.IsNullOrEmpty(languageCode)
+                    ? CultureInfo.CurrentUICulture // システム設定を使用
+                    : new CultureInfo(languageCode);
                 
                 // UIスレッドとバックグラウンドスレッドの両方に設定
                 Thread.CurrentThread.CurrentUICulture = culture;
