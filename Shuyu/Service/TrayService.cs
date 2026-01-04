@@ -13,32 +13,32 @@ public class TrayService : IDisposable
     /// システムトレイに表示するアイコンオブジェクト
     /// </summary>
     private NotifyIcon? _trayIcon;
-    
+
     /// <summary>
     /// ホットキー管理を担当するマネージャー（RegisterHotKey と低レベルフック）
     /// </summary>
     private HotkeyManager? _hotkeyManager;
-    
+
     /// <summary>
     /// キャプチャ要求時に呼び出されるコールバック関数
     /// </summary>
     private readonly Action _onCaptureRequested;
-    
+
     /// <summary>
     /// 設定表示要求時に呼び出されるコールバック関数（現在未使用）
     /// </summary>
     private readonly Action _onSettingsRequested;
-    
+
     /// <summary>
     /// 設定ウィンドウのインスタンス（再利用のためキャッシュ）
     /// </summary>
     private SettingsWindow? _settingsWindow;
-    
+
     /// <summary>
     /// アプリケーション終了要求時に呼び出されるコールバック関数
     /// </summary>
     private readonly Action _onExitRequested;
-    
+
     /// <summary>
     /// 現在のホットキーモード（true=低レベルフック、false=RegisterHotKey）
     /// </summary>
@@ -59,21 +59,22 @@ public class TrayService : IDisposable
 
         // トレイアイコンとコンテキストメニューを初期化
         InitializeTrayIcon();
-        
+
         // HotkeyManager を作成してホットキー機能を初期化
-        	_hotkeyManager = new HotkeyManager();
-            LogService.LogInfo("[TrayService] HotkeyManager created");
-        
+        _hotkeyManager = new HotkeyManager();
+        LogService.LogInfo("[TrayService] HotkeyManager created");
+
         // 保存された設定を読み込み
         var settings = UserSettingsStore.Load();
         _useLowLevelHook = settings.useLowLevelHook;
-        
-        	// 読み込んだ設定に応じてホットキーモードを適用
-        	LogService.LogInfo($"[TrayService] Applying saved hook setting: useLowLevelHook={_useLowLevelHook}");
-        	_hotkeyManager.ApplyUseLowLevelHook(_useLowLevelHook, true);
-        
-        	// ホットキー押下時にキャプチャコールバックを呼び出すよう設定
-        	_hotkeyManager.HotkeyPressed += () => {
+
+        // 読み込んだ設定に応じてホットキーモードを適用
+        LogService.LogInfo($"[TrayService] Applying saved hook setting: useLowLevelHook={_useLowLevelHook}");
+        _hotkeyManager.ApplyUseLowLevelHook(_useLowLevelHook, true);
+
+        // ホットキー押下時にキャプチャコールバックを呼び出すよう設定
+        _hotkeyManager.HotkeyPressed += () =>
+        {
             LogService.LogDebug("[TrayService] HotkeyPressed event received");
             _onCaptureRequested?.Invoke();
         };
@@ -102,14 +103,14 @@ public class TrayService : IDisposable
     {
         // 現在実行中のアセンブリを取得
         var assembly = Assembly.GetExecutingAssembly();
-        
+
         // 埋め込みリソースからアイコンファイルのストリームを取得
         using var stream = assembly.GetManifestResourceStream("Shuyu.Resources.Icons.tray.ico");
-        
+
         // リソースが見つからない場合はエラー
         if (stream == null)
             throw new InvalidOperationException("アイコンリソースが見つかりません。");
-            
+
         // ストリームからアイコンオブジェクトを作成して返す
         return new Icon(stream);
     }
@@ -125,26 +126,26 @@ public class TrayService : IDisposable
 
         // メニュー項目を追加：キャプチャ開始（ホットキー表示付き）
         menu.Items.Add(Strings.StartCapture, null, (s, e) => _onCaptureRequested?.Invoke());
-        
+
         // 区切り線を追加
         menu.Items.Add(new ToolStripSeparator());
 
         // ピン留め関連
         menu.Items.Add(Strings.RemoveAllPinned, null, (s, e) => PinnedWindowManager.CloseAll());
         menu.Items.Add(Strings.TogglePinnedVisibility, null, (s, e) => PinnedWindowManager.ToggleAllVisibility());
-        
+
         // 区切り線を追加
         menu.Items.Add(new ToolStripSeparator());
-        
+
         // メニュー項目を追加：設定画面表示
         menu.Items.Add(Strings.Settings, null, (s, e) => ShowSettingsWindow());
-        
+
         // メニュー項目を追加：バージョン情報表示
         menu.Items.Add(Strings.VersionInfo, null, (s, e) => ShowAbout());
-        
+
         // 区切り線を追加
         menu.Items.Add(new ToolStripSeparator());
-        
+
         // メニュー項目を追加：アプリケーション終了
         menu.Items.Add(Strings.Exit, null, (s, e) => _onExitRequested?.Invoke());
 
@@ -180,19 +181,19 @@ public class TrayService : IDisposable
 
         // モーダルダイアログとして表示
         var res = _settingsWindow.ShowDialog();
-        
+
         // OKボタンが押された場合のみ設定を適用
         if (res == true)
         {
             // 設定ウィンドウから新しい設定値を取得
             var wantHook = _settingsWindow.useLowLevelHook;
-            
+
             // 設定に応じてホットキーモードを切り替え
             ApplyHookSetting(wantHook);
 
             // 変更された設定をファイルに永続化
-            var s = new UserSettings 
-            { 
+            var s = new UserSettings
+            {
                 useLowLevelHook = wantHook,
                 language = _settingsWindow.SelectedLanguage
             };
@@ -248,7 +249,7 @@ public class TrayService : IDisposable
     {
         // HotkeyManager のリソース（フック、ホットキー登録）を解放
         _hotkeyManager?.Dispose();
-        
+
         // トレイアイコンを削除してリソースを解放
         _trayIcon?.Dispose();
     }
