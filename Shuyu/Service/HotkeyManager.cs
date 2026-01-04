@@ -143,15 +143,9 @@ namespace Shuyu
                         moduleName = null;
                     }
 
-                    IntPtr module;
-                    if (moduleName == null)
-                    {
-                        module = IntPtr.Zero;
-                    }
-                    else
-                    {
-                        module = GetModuleHandle(moduleName);
-                    }
+                    IntPtr module = moduleName == null
+                        ? IntPtr.Zero
+                        : GetModuleHandle(moduleName);
 
                     LogService.LogDebug($"[HotkeyManager] Installing low-level hook (module={module})");
                     // 低レベルキーボードフックをインストール
