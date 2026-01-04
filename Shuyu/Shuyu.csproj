@@ -13,10 +13,6 @@
 	</PropertyGroup>
 
   <!-- Conditional Define: set UseBitBlt=true when building with -p:UseBitBlt=true -->
-  <PropertyGroup>
-    <DefineConstants>$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(UseBitBlt)' == 'true'">
     <DefineConstants>$(DefineConstants);USE_BITBLT</DefineConstants>
   </PropertyGroup>
