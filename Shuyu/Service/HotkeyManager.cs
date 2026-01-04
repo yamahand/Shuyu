@@ -112,8 +112,9 @@ namespace Shuyu
         }
 
         /// <summary>
-        /// 低レベルキーボードフックをインストールします。Shift+PrintScreen を検出して抑止します。
+        /// 低レベルキーボードフックをインストールします。
         /// </summary>
+        /// <returns>インストールに成功した場合は true。</returns>
         public bool InstallLowLevelHook()
         {
             lock (_lock) // スレッドセーフ処理
