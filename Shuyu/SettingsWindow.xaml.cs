@@ -9,7 +9,7 @@ namespace Shuyu
     /// </summary>
     public partial class SettingsWindow : Window
     {
-        private readonly bool _isInitializing = true;
+        private bool _isInitializing = true;
         private bool _isUpdatingLanguageCombo = false;
         
         /// <summary>
