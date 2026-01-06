@@ -16,7 +16,8 @@ namespace Shuyu.Service
         private static readonly string[] AllowedImageExtensions = { ".png", ".jpg", ".jpeg", ".bmp", ".dds" };
         // Windows では : はドライブレター（C:）で有効なので、ドライブレター以外での : をチェック
         private static readonly Regex InvalidPathCharsRegex = new(@"[<>""|?*]", RegexOptions.Compiled);
-        private static readonly Regex InvalidColonRegex = new(@"(?<!^[a-zA-Z]):", RegexOptions.Compiled);
+        // ドライブレター (C:, D: など) 以外のコロンを検出
+        private static readonly Regex InvalidColonRegex = new(@"(?!^[a-zA-Z]:).*:", RegexOptions.Compiled);
         private static readonly string ApplicationDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Shuyu");
 
         /// <summary>
