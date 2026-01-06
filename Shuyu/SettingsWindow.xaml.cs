@@ -56,7 +56,9 @@ namespace Shuyu
             var languageCombo = this.FindName("LanguageComboBox") as System.Windows.Controls.ComboBox;
             if (languageCombo != null)
             {
-                var selectedIndex = languageCombo.SelectedIndex;
+                // 現在選択されている言語のTagを保存
+                var selectedItem = languageCombo.SelectedItem as System.Windows.Controls.ComboBoxItem;
+                var selectedTag = selectedItem?.Tag as string;
 
                 _isUpdatingLanguageCombo = true;
                 try
@@ -74,10 +76,17 @@ namespace Shuyu
                     languageCombo.Items.Add(japaneseItem);
                     languageCombo.Items.Add(englishItem);
                     
-                    // 選択状態を復元（範囲内のみ）
-                    if (selectedIndex >= 0 && selectedIndex < languageCombo.Items.Count)
+                    // Tagベースで選択状態を復元
+                    if (selectedTag != null)
                     {
-                        languageCombo.SelectedIndex = selectedIndex;
+                        foreach (System.Windows.Controls.ComboBoxItem item in languageCombo.Items)
+                        {
+                            if ((item.Tag as string) == selectedTag)
+                            {
+                                languageCombo.SelectedItem = item;
+                                break;
+                            }
+                        }
                     }
                 }
                 finally
