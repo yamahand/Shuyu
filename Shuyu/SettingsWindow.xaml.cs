@@ -181,10 +181,10 @@ namespace Shuyu
         }
         
         /// <summary>
-        /// ウィンドウが閉じられる際の処理。キャンセル時は元の言語設定に戻します。
+        /// ウィンドウが閉じられる前の処理。キャンセル時は元の言語設定に戻します。
         /// </summary>
         /// <param name="e">イベント引数。</param>
-        protected override void OnClosed(System.EventArgs e)
+        protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
             // OKで閉じられていない場合（キャンセルまたはX）、元の言語に戻す
             if (this.DialogResult != true)
@@ -192,7 +192,7 @@ namespace Shuyu
                 LocalizationService.SetLanguage(_originalLanguage);
             }
             
-            base.OnClosed(e);
+            base.OnClosing(e);
         }
     }
 }
