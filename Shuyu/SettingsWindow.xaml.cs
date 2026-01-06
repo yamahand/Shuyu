@@ -161,7 +161,7 @@ namespace Shuyu
         }
 
         /// <summary>
-        /// OK ボタンがクリックされたときの処理。設定を保存してDialogResult を true にして画面を閉じます。
+        /// OK ボタンのクリックイベントを処理します。設定を保存してウィンドウを閉じます。
         /// </summary>
         /// <param name="sender">イベント送信者。</param>
         /// <param name="e">イベント引数。</param>
