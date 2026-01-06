@@ -62,7 +62,8 @@ namespace Shuyu.Service
 #else
             new SystemDrawingImageCapture()
 #endif
-        ) { }
+        )
+        { }
 
         public AsyncScreenCaptureService(IImageCapture? imageCapture)
         {
@@ -94,7 +95,7 @@ namespace Shuyu.Service
 
                 // 仮想スクリーン情報を取得
                 var virtualScreen = CoordinateTransformation.GetVirtualScreenInfo();
-                
+
                 // 領域が有効かチェック
                 if (!CoordinateTransformation.IsValidRegion(region, virtualScreen.Bounds))
                 {
@@ -124,7 +125,7 @@ namespace Shuyu.Service
                 progress?.Invoke(100, "完了");
 
                 LogService.LogInfo($"キャプチャ完了: {region} -> {bitmapSource.PixelWidth}x{bitmapSource.PixelHeight}");
-                
+
                 return new CaptureResult(bitmapSource, region);
             }
             catch (OperationCanceledException)
@@ -260,7 +261,7 @@ namespace Shuyu.Service
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
                 GC.Collect();
-                
+
                 LogService.LogDebug("メモリ最適化完了");
             }
             catch (Exception ex)
@@ -277,10 +278,10 @@ namespace Shuyu.Service
             if (_disposed) return;
 
             _disposed = true;
-            
+
             // 最終クリーンアップ
             OptimizeMemory();
-            
+
             LogService.LogDebug("AsyncScreenCaptureService破棄完了");
         }
     }
