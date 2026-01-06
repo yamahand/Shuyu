@@ -44,7 +44,8 @@ namespace Shuyu.Service
                 // ドライブレターパス（C:, C:\, D:/ など）の場合、3文字目以降にコロンがないかチェック
                 if (DriveLetterPathRegex.IsMatch(filePath))
                 {
-                    // ドライブレター後（3文字目以降）にコロンがあれば無効
+                    // ドライブレター後（インデックス2以降）にコロンがあれば無効
+                    // C: のコロンは位置1なので、位置2から検索
                     if (filePath.IndexOf(':', 2) >= 0)
                         return false;
                 }
