@@ -11,6 +11,7 @@ namespace Shuyu
     {
         private bool _isInitializing = true;
         private bool _isUpdatingLanguageCombo = false;
+        private string? _originalLanguage;
         
         /// <summary>
         /// SettingsWindow の新しいインスタンスを初期化します。
@@ -18,6 +19,11 @@ namespace Shuyu
         public SettingsWindow()
         {
             InitializeComponent();
+            
+            // 現在の言語設定を保存（キャンセル時に復元するため）
+            var settings = UserSettingsStore.Load();
+            _originalLanguage = settings.language;
+            
             ApplyLocalization();
             LoadCurrentSettings();
             _isInitializing = false;
@@ -147,17 +153,8 @@ namespace Shuyu
         
         private void LanguageComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            if (_isInitializing || _isUpdatingLanguageCombo) return;
-            
-            var combo = sender as System.Windows.Controls.ComboBox;
-            var selectedItem = combo?.SelectedItem as System.Windows.Controls.ComboBoxItem;
-            var languageCode = selectedItem?.Tag as string;
-            
-            // 言語をすぐに適用
-            LocalizationService.SetLanguage(string.IsNullOrEmpty(languageCode) ? null : languageCode);
-            
-            // UIを更新
-            ApplyLocalization();
+            // 言語の適用はOKボタンクリック時に行うため、ここでは何もしない
+            // これにより、ユーザーがキャンセルした場合に言語が変更されないようにする
         }
 
         /// <summary>
@@ -167,16 +164,35 @@ namespace Shuyu
         /// <param name="e">イベント引数。</param>
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
+            // 選択された言語を適用
+            var selectedLanguage = this.SelectedLanguage;
+            LocalizationService.SetLanguage(selectedLanguage);
+            
             // 設定を保存
             var settings = new UserSettings
             {
                 useLowLevelHook = this.useLowLevelHook,
-                language = this.SelectedLanguage
+                language = selectedLanguage
             };
             UserSettingsStore.Save(settings);
             
             this.DialogResult = true;
             this.Close();
+        }
+        
+        /// <summary>
+        /// ウィンドウが閉じられる際の処理。キャンセル時は元の言語設定に戻します。
+        /// </summary>
+        /// <param name="e">イベント引数。</param>
+        protected override void OnClosed(System.EventArgs e)
+        {
+            // OKで閉じられていない場合（キャンセルまたはX）、元の言語に戻す
+            if (this.DialogResult != true)
+            {
+                LocalizationService.SetLanguage(_originalLanguage);
+            }
+            
+            base.OnClosed(e);
         }
     }
 }
