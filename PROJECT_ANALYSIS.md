@@ -8,11 +8,11 @@
 
 ## 概要
 - プロジェクト名: Shuyu
-- 種別: Windows デスクトップアプリケーション（WPF / .NET 9）
+- 種別: Windows デスクトップアプリケーション（WPF / .NET）
 - 目的: 軽量スクリーンキャプチャ（領域選択、ピン留め、ホットキー、トレイ常駐）
 
 ## 技術スタック
-- フレームワーク: `.NET 9 (net9.0-windows)`
+- フレームワーク: `.NET（Windows デスクトップ / WPF）`
 - UI: WPF（`<UseWPF>true</UseWPF>`）、一部で WinForms（`NotifyIcon` 等）を使用
 - 主要パッケージ: `System.Drawing.Common (6.0.0)`
 - 対応ランタイム: `win-x64`, `win-arm64` を想定
