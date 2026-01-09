@@ -14,22 +14,22 @@ namespace Shuyu.Service
     {
         private const int SRCCOPY = 0x00CC0020;
 
-        [DllImport("user32.dll")]
+        [DllImport("user32.dll", SetLastError = true)]
         private static extern IntPtr GetDC(IntPtr hwnd);
 
-        [DllImport("user32.dll")]
+        [DllImport("user32.dll", SetLastError = true)]
         private static extern int ReleaseDC(IntPtr hwnd, IntPtr hdc);
 
-        [DllImport("gdi32.dll")]
+        [DllImport("gdi32.dll", SetLastError = true)]
         private static extern IntPtr CreateCompatibleDC(IntPtr hdc);
 
-        [DllImport("gdi32.dll")]
+        [DllImport("gdi32.dll", SetLastError = true)]
         private static extern IntPtr CreateCompatibleBitmap(IntPtr hdc, int nWidth, int nHeight);
 
-        [DllImport("gdi32.dll")]
+        [DllImport("gdi32.dll", SetLastError = true)]
         private static extern IntPtr SelectObject(IntPtr hdc, IntPtr hgdiobj);
 
-        [DllImport("gdi32.dll")]
+        [DllImport("gdi32.dll", SetLastError = true)]
         private static extern bool BitBlt(IntPtr hdcDest, int nXDest, int nYDest, int nWidth, int nHeight,
             IntPtr hdcSrc, int nXSrc, int nYSrc, int dwRop);
 
@@ -55,18 +55,34 @@ namespace Shuyu.Service
                 cancellationToken.ThrowIfCancellationRequested();
 
                 hScreenDC = GetDC(IntPtr.Zero);
-                if (hScreenDC == IntPtr.Zero) return null;
+                if (hScreenDC == IntPtr.Zero)
+                {
+                    LogService.LogError($"GetDC failed. Error={Marshal.GetLastWin32Error()}");
+                    return null;
+                }
 
                 hMemDC = CreateCompatibleDC(hScreenDC);
-                if (hMemDC == IntPtr.Zero) return null;
+                if (hMemDC == IntPtr.Zero)
+                {
+                    LogService.LogError($"CreateCompatibleDC failed. Error={Marshal.GetLastWin32Error()}");
+                    return null;
+                }
 
                 hBitmap = CreateCompatibleBitmap(hScreenDC, region.Width, region.Height);
-                if (hBitmap == IntPtr.Zero) return null;
+                if (hBitmap == IntPtr.Zero)
+                {
+                    LogService.LogError($"CreateCompatibleBitmap failed. Error={Marshal.GetLastWin32Error()}");
+                    return null;
+                }
 
                 hOld = SelectObject(hMemDC, hBitmap);
 
                 bool success = BitBlt(hMemDC, 0, 0, region.Width, region.Height, hScreenDC, region.X, region.Y, SRCCOPY);
-                if (!success) return null;
+                if (!success)
+                {
+                    LogService.LogError($"BitBlt failed. Error={Marshal.GetLastWin32Error()}");
+                    return null;
+                }
 
                 // Create managed Bitmap from HBITMAP
                 var bmp = Image.FromHbitmap(hBitmap);
