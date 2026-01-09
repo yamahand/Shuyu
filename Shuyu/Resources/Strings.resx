@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  
+  <!-- PinnedWindow strings -->
+  <data name="CopyToClipboard" xml:space="preserve">
+    <value>クリップボードにコピー</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>閉じる</value>
+  </data>
+  <data name="SaveImage" xml:space="preserve">
+    <value>画像を保存</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>エラー</value>
+  </data>
+  <data name="InvalidFilePath" xml:space="preserve">
+    <value>指定されたファイルパスは無効です。</value>
+  </data>
+  <data name="SaveFailed" xml:space="preserve">
+    <value>保存に失敗しました: {0}</value>
+  </data>
+  <data name="ClipboardCopyFailed" xml:space="preserve">
+    <value>クリップボードへのコピーに失敗しました: {0}</value>
+  </data>
+  <data name="ImageCopiedToClipboard" xml:space="preserve">
+    <value>画像をクリップボードにコピーしました</value>
+  </data>
+  <data name="ImageSaved" xml:space="preserve">
+    <value>画像を保存しました: {0}</value>
+  </data>
+  <data name="ClipboardCopyError" xml:space="preserve">
+    <value>クリップボードコピーエラー</value>
+  </data>
+  <data name="ImageSaveError" xml:space="preserve">
+    <value>画像保存エラー</value>
+  </data>
+  
+  <!-- TrayService strings -->
+  <data name="StartCapture" xml:space="preserve">
+    <value>キャプチャ開始 (Shift+PrintScreen)</value>
+  </data>
+  <data name="RemoveAllPinned" xml:space="preserve">
+    <value>ピン留めをすべて削除</value>
+  </data>
+  <data name="TogglePinnedVisibility" xml:space="preserve">
+    <value>ピン留めの表示/非表示を切り替え</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>設定</value>
+  </data>
+  <data name="VersionInfo" xml:space="preserve">
+    <value>バージョン情報</value>
+  </data>
+  <data name="Exit" xml:space="preserve">
+    <value>終了</value>
+  </data>
+  <data name="ShuyuVersionFormat" xml:space="preserve">
+    <value>Shuyu v{0}</value>
+  </data>
+  <data name="ShuyuVersionUnknown" xml:space="preserve">
+    <value>Shuyu v-.-.-</value>
+  </data>
+  
+  <!-- SettingsWindow strings -->
+  <data name="SettingsWindowTitle" xml:space="preserve">
+    <value>設定</value>
+  </data>
+  <data name="UseLowLevelHook" xml:space="preserve">
+    <value>低レベルキーボードフックを使用する (PrintScreen を抑止する)</value>
+  </data>
+  <data name="SettingsDescription" xml:space="preserve">
+    <value>設定を変更したら「OK」を押してください。低レベルフックは他アプリに影響を与える可能性があるため、必要な場合のみ有効にしてください。</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>キャンセル</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>言語</value>
+  </data>
+  <data name="LanguageJapanese" xml:space="preserve">
+    <value>日本語</value>
+  </data>
+  <data name="LanguageEnglish" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="LanguageSystem" xml:space="preserve">
+    <value>システム設定</value>
+  </data>
+  
+  <!-- File filter strings -->
+  <data name="PngImageFilter" xml:space="preserve">
+    <value>PNG 画像 (*.png)|*.png</value>
+  </data>
+  <data name="JpegImageFilter" xml:space="preserve">
+    <value>JPEG 画像 (*.jpg;*.jpeg)|*.jpg;*.jpeg</value>
+  </data>
+  <data name="BmpImageFilter" xml:space="preserve">
+    <value>Bitmap 画像 (*.bmp)|*.bmp</value>
+  </data>
+  <data name="DdsImageFilter" xml:space="preserve">
+    <value>DDS 画像 (*.dds)|*.dds</value>
+  </data>
+  <data name="AllFilesFilter" xml:space="preserve">
+    <value>すべてのファイル (*.*)|*.*</value>
+  </data>
+  
+  <!-- Log messages -->
+  <data name="InvalidFilePathSpecified" xml:space="preserve">
+    <value>無効なファイルパスが指定されました: {0}</value>
+  </data>
+  <data name="UnsupportedFileExtension" xml:space="preserve">
+    <value>未対応の拡張子です: {0}</value>
+  </data>
+  <data name="WindowCreatedAt" xml:space="preserve">
+    <value>作成時</value>
+  </data>
+</root>

@@ -15,6 +15,11 @@ namespace Shuyu
         /// 低レベルキーボードフックを使用するかどうかを示します。
         /// </summary>
         public bool useLowLevelHook { get; set; } = false;
+        
+        /// <summary>
+        /// アプリケーションの言語設定を示します。nullの場合はシステム設定に従います。
+        /// </summary>
+        public string? language { get; set; } = null;
     }
 
     /// <summary>

@@ -10,9 +10,9 @@ on:
       - 'LICENSE'
 
 env:
-  DOTNET_VERSION: '9.0.x'
+  DOTNET_VERSION: '10.0.x'
   PROJECT_NAME: 'Shuyu'
-  SOLUTION_FILE: 'Shuyu.sln'
+  SOLUTION_FILE: 'Shuyu.slnx'
 
 jobs:
   build-and-release:
@@ -25,8 +25,8 @@ jobs:
       with:
         fetch-depth: 0  # タグとコミット履歴の取得
     
-    # .NET 9 SDKのセットアップ
-    - name: Setup .NET 9
+    # .NET 10 SDKのセットアップ
+    - name: Setup .NET 10
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
@@ -85,7 +85,7 @@ jobs:
           --verbosity minimal `
           -p:Version=${{ steps.version.outputs.VERSION }}
     
-    # .NET 9用の自己完結型アプリケーション発行
+    # .NET 10用の自己完結型アプリケーション発行
     - name: Publish application (Self-contained)
       run: |
         # runtime 向けにビルドしてランタイム固有の成果物を生成
@@ -148,7 +148,7 @@ jobs:
         
         System Requirements:
         - Windows 10/11
-        - .NET 9.0 Runtime (フレームワーク依存版の場合)
+        - .NET 10.0 Runtime (フレームワーク依存版の場合)
         
         インストール方法:
         1. ZIPファイルを任意のフォルダに展開
@@ -222,7 +222,7 @@ jobs:
           - サイズは大きめですが、すぐに実行可能
           
           **Intel/AMD 64bit CPU 軽量版**: `${{ env.PROJECT_NAME }}-v${{ steps.version.outputs.VERSION }}-win-x64-framework-dependent.zip`
-          - 別途 .NET 9.0 Runtime のインストールが必要
+          - 別途 .NET 10.0 Runtime のインストールが必要
           - サイズが小さい
           
           **ARM64 CPU**: `${{ env.PROJECT_NAME }}-v${{ steps.version.outputs.VERSION }}-win-arm64-standalone.zip`
@@ -245,7 +245,7 @@ jobs:
           - ビルド番号: ${{ github.run_number }}
           - ビルド日時: ${{ github.event.head_commit.timestamp }}
           - コミット: [`${{ steps.version.outputs.SHORT_SHA }}`](https://github.com/yamahand/Shuyu/commit/${{ github.sha }})
-          - .NET バージョン: 9.0
+          - .NET バージョン: 10.0
           - 対応アーキテクチャ: x64, ARM64
           
           ---

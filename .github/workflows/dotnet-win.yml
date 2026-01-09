@@ -1,0 +1,40 @@
+name: .NET Build (Windows)
+
+on:
+  push:
+    branches: [ dev, main ]
+  pull_request:
+    branches: [ dev, main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Restore
+      run: dotnet restore Shuyu.slnx
+
+    - name: Build
+      run: dotnet build Shuyu.slnx -c Release --no-restore
+
+    - name: Publish (win-x64)
+      run: |
+        dotnet publish Shuyu/Shuyu.csproj -c Release -r win-x64 --self-contained false -o ./artifacts/win-x64
+
+    - name: Publish (win-arm64)
+      run: |
+        dotnet publish Shuyu/Shuyu.csproj -c Release -r win-arm64 --self-contained false -o ./artifacts/win-arm64
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: shuyu-artifacts
+        path: artifacts

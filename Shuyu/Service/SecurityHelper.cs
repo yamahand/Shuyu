@@ -14,7 +14,10 @@ namespace Shuyu.Service
     public static class SecurityHelper
     {
         private static readonly string[] AllowedImageExtensions = { ".png", ".jpg", ".jpeg", ".bmp", ".dds" };
-        private static readonly Regex InvalidPathCharsRegex = new(@"[<>:""|?*]", RegexOptions.Compiled);
+        // Windows では : はドライブレター（C:）で有効なので、ドライブレター以外での : をチェック
+        private static readonly Regex InvalidPathCharsRegex = new(@"[<>""|?*]", RegexOptions.Compiled);
+        // ドライブレターパス（C:, C:\, D:/ など）を検出
+        private static readonly Regex DriveLetterPathRegex = new(@"^[a-zA-Z]:", RegexOptions.Compiled);
         private static readonly string ApplicationDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Shuyu");
 
         /// <summary>
@@ -36,6 +39,22 @@ namespace Shuyu.Service
                 // 危険な文字をチェック
                 if (InvalidPathCharsRegex.IsMatch(filePath))
                     return false;
+                
+                // コロン（:）はドライブレター以外では無効
+                // ドライブレターパス（C:, C:\, D:/ など）の場合、3文字目以降にコロンがないかチェック
+                if (DriveLetterPathRegex.IsMatch(filePath))
+                {
+                    // ドライブレター後（インデックス2以降）にコロンがあれば無効
+                    // C: のコロンは位置1なので、位置2から検索
+                    if (filePath.IndexOf(':', 2) >= 0)
+                        return false;
+                }
+                else
+                {
+                    // ドライブレターパスでない場合、コロンが含まれていれば無効
+                    if (filePath.Contains(':'))
+                        return false;
+                }
 
                 // 相対パス攻撃をチェック
                 if (filePath.Contains("..") || filePath.Contains("./") || filePath.Contains(".\\"))

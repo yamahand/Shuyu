@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
-		<TargetFramework>net9.0-windows</TargetFramework>
+		<TargetFramework>net10.0-windows7.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
@@ -11,6 +11,11 @@
 		<ApplicationIcon>Resources\Icons\shuyu.ico</ApplicationIcon>
 		<Version>0.1.0</Version>
 	</PropertyGroup>
+
+  <!-- Conditional Define: set UseBitBlt=true when building with -p:UseBitBlt=true -->
+  <PropertyGroup Condition="'$(UseBitBlt)' == 'true'">
+    <DefineConstants>$(DefineConstants);USE_BITBLT</DefineConstants>
+  </PropertyGroup>
 
 	<ItemGroup>
 	  <None Remove="Resources\Icons\shuyu.ico" />
@@ -25,7 +30,18 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="System.Drawing.Common" Version="6.0.0" />
+	  <Compile Update="Resources\Strings.Designer.cs">
+	    <DesignTime>True</DesignTime>
+	    <AutoGen>True</AutoGen>
+	    <DependentUpon>Strings.resx</DependentUpon>
+	  </Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Update="Resources\Strings.resx">
+	    <Generator>ResXFileCodeGenerator</Generator>
+	    <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+	  </EmbeddedResource>
 	</ItemGroup>
 
 </Project>

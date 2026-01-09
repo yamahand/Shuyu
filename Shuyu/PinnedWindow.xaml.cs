@@ -6,6 +6,7 @@ using System.Windows.Input;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using Shuyu.Service;
+using Shuyu.Resources;
 
 namespace Shuyu
 {
@@ -80,26 +81,35 @@ namespace Shuyu
             };
 
             // 生成時の座標をログ出力（DIP と 物理px）
-            LogPosition("作成時");
+            LogPosition(Strings.WindowCreatedAt);
 
             this.Closed += (_, __) => PinnedWindowManager.Unregister(this);
         }
 
-        private ContextMenu BuildContextMenu()
+        private System.Windows.Controls.ContextMenu BuildContextMenu()
         {
-            var menu = new ContextMenu();
-            menu.Items.Add(CreateItem("保存 (PNG)", () => SaveWithDialog("png")));
-            menu.Items.Add(CreateItem("保存 (JPEG)", () => SaveWithDialog("jpg")));
-            menu.Items.Add(CreateItem("保存 (BMP)", () => SaveWithDialog("bmp")));
-            menu.Items.Add(CreateItem("保存 (DDS)", () => SaveWithDialog("dds")));
-            menu.Items.Add(new Separator());
-            menu.Items.Add(CreateItem("閉じる", () => this.Close()));
+            var menu = new System.Windows.Controls.ContextMenu();
+            
+            // クリップボードにコピー
+            menu.Items.Add(CreateItem(Strings.CopyToClipboard, CopyToClipboard));
+            menu.Items.Add(new System.Windows.Controls.Separator());
+            
+            // 保存メニュー（ネスト化）
+            var saveMenu = new System.Windows.Controls.MenuItem { Header = Strings.Save };
+            saveMenu.Items.Add(CreateItem("PNG", () => SaveWithDialog("png")));
+            saveMenu.Items.Add(CreateItem("JPEG", () => SaveWithDialog("jpg")));
+            saveMenu.Items.Add(CreateItem("BMP", () => SaveWithDialog("bmp")));
+            saveMenu.Items.Add(CreateItem("DDS", () => SaveWithDialog("dds")));
+            menu.Items.Add(saveMenu);
+            
+            menu.Items.Add(new System.Windows.Controls.Separator());
+            menu.Items.Add(CreateItem(Strings.Close, () => this.Close()));
             return menu;
         }
 
-        private MenuItem CreateItem(string header, Action action)
+        private System.Windows.Controls.MenuItem CreateItem(string header, Action action)
         {
-            var item = new MenuItem { Header = header };
+            var item = new System.Windows.Controls.MenuItem { Header = header };
             item.Click += (_, __) => action();
             return item;
         }
@@ -108,15 +118,15 @@ namespace Shuyu
         {
             var dlg = new Microsoft.Win32.SaveFileDialog
             {
-                Title = "画像を保存",
+                Title = Strings.SaveImage,
                 FileName = $"pinned_{DateTime.Now:yyyyMMdd_HHmmss}.{ext}",
                 Filter = ext switch
                 {
-                    "png" => "PNG 画像 (*.png)|*.png",
-                    "jpg" => "JPEG 画像 (*.jpg;*.jpeg)|*.jpg;*.jpeg",
-                    "bmp" => "Bitmap 画像 (*.bmp)|*.bmp",
-                    "dds" => "DDS 画像 (*.dds)|*.dds",
-                    _ => "すべてのファイル (*.*)|*.*"
+                    "png" => Strings.PngImageFilter,
+                    "jpg" => Strings.JpegImageFilter,
+                    "bmp" => Strings.BmpImageFilter,
+                    "dds" => Strings.DdsImageFilter,
+                    _ => Strings.AllFilesFilter
                 },
                 DefaultExt = ext
             };
@@ -126,21 +136,35 @@ namespace Shuyu
                 // セキュリティ検証を追加
                 if (!SecurityHelper.IsValidFilePath(dlg.FileName))
                 {
-                    LogService.LogWarning($"無効なファイルパスが指定されました: {SecurityHelper.SanitizeLogMessage(dlg.FileName)}");
-                    System.Windows.MessageBox.Show(this, "指定されたファイルパスは無効です。", "エラー", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    LogService.LogWarning(string.Format(Strings.InvalidFilePathSpecified, SecurityHelper.SanitizeLogMessage(dlg.FileName)));
+                    System.Windows.MessageBox.Show(this, Strings.InvalidFilePath, Strings.Error, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
                 try
                 {
                     SaveImage(dlg.FileName);
-                    LogService.LogInfo($"画像を保存しました: {SecurityHelper.SanitizeLogMessage(dlg.FileName)}");
+                    LogService.LogInfo(string.Format(Strings.ImageSaved, SecurityHelper.SanitizeLogMessage(dlg.FileName)));
                 }
                 catch (Exception ex)
                 {
-                    LogService.LogException(ex, "画像保存エラー");
-                    System.Windows.MessageBox.Show(this, $"保存に失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                    LogService.LogException(ex, Strings.ImageSaveError);
+                    System.Windows.MessageBox.Show(this, string.Format(Strings.SaveFailed, ex.Message), Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
                 }
+            }
+        }
+
+        private void CopyToClipboard()
+        {
+            try
+            {
+                System.Windows.Clipboard.SetImage(_image);
+                LogService.LogInfo(Strings.ImageCopiedToClipboard);
+            }
+            catch (Exception ex)
+            {
+                LogService.LogException(ex, Strings.ClipboardCopyError);
+                System.Windows.MessageBox.Show(this, string.Format(Strings.ClipboardCopyFailed, ex.Message), Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -178,7 +202,7 @@ namespace Shuyu
                         break;
                     }
                 default:
-                    throw new NotSupportedException($"未対応の拡張子です: {ext}");
+                    throw new NotSupportedException(string.Format(Strings.UnsupportedFileExtension, ext));
             }
         }
 

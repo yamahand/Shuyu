@@ -1,25 +1,31 @@
 <Window x:Class="Shuyu.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="設定" Height="180" Width="360" WindowStartupLocation="CenterOwner">
+        Height="240" Width="360" WindowStartupLocation="CenterOwner">
     <Grid Margin="10">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <StackPanel Orientation="Vertical" Grid.Row="0" Margin="0,0,0,8">
-            <CheckBox x:Name="UseHookCheckBox" Content="低レベルキーボードフックを使用する (PrintScreen を抑止する)" />
+        <StackPanel Orientation="Vertical" Grid.Row="0" Margin="0,0,0,12">
+            <Label x:Name="LanguageLabel" Margin="0,0,0,4" />
+            <ComboBox x:Name="LanguageComboBox" SelectionChanged="LanguageComboBox_SelectionChanged">
+            </ComboBox>
         </StackPanel>
 
-        <TextBlock Grid.Row="1" TextWrapping="Wrap" Foreground="Gray">
-            設定を変更したら「OK」を押してください。低レベルフックは他アプリに影響を与える可能性があるため、必要な場合のみ有効にしてください。
+        <StackPanel Orientation="Vertical" Grid.Row="1" Margin="0,0,0,12">
+            <CheckBox x:Name="UseHookCheckBox" />
+        </StackPanel>
+
+        <TextBlock x:Name="DescriptionText" Grid.Row="2" TextWrapping="Wrap" Foreground="Gray">
         </TextBlock>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
-            <Button Width="80" Margin="4,0" IsDefault="True" Click="OkButton_Click">OK</Button>
-            <Button Width="80" Margin="4,0" IsCancel="True">キャンセル</Button>
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+            <Button x:Name="OKButton" Width="80" Margin="4,0" IsDefault="True" Click="OkButton_Click"></Button>
+            <Button x:Name="CancelButton" Width="80" Margin="4,0" IsCancel="True"></Button>
         </StackPanel>
     </Grid>
 </Window>

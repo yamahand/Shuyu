@@ -13,6 +13,7 @@ namespace Shuyu.Service
     public class AsyncScreenCaptureService : IDisposable
     {
         private bool _disposed = false;
+        private readonly IImageCapture _imageCapture;
 
         /// <summary>
         /// キャプチャ結果を格納する構造体
@@ -55,6 +56,28 @@ namespace Shuyu.Service
         /// <param name="progress">進行状況レポーター</param>
         /// <param name="cancellationToken">キャンセレーショントークン</param>
         /// <returns>キャプチャ結果</returns>
+        public AsyncScreenCaptureService() : this(
+#if USE_BITBLT
+            new BitBltImageCapture()
+#else
+            new SystemDrawingImageCapture()
+#endif
+        )
+        { }
+
+        public AsyncScreenCaptureService(IImageCapture? imageCapture)
+        {
+            _imageCapture = imageCapture ?? new SystemDrawingImageCapture();
+            try
+            {
+                LogService.LogInfo($"ImageCapture implementation: {_imageCapture.GetType().FullName}");
+            }
+            catch (Exception ex)
+            {
+                LogService.LogWarning($"ImageCapture logging failed: {SecurityHelper.SanitizeLogMessage(ex.Message)}");
+            }
+        }
+
         public async Task<CaptureResult> CaptureRegionAsync(
             Rectangle region,
             ProgressReporter? progress = null,
@@ -72,7 +95,7 @@ namespace Shuyu.Service
 
                 // 仮想スクリーン情報を取得
                 var virtualScreen = CoordinateTransformation.GetVirtualScreenInfo();
-                
+
                 // 領域が有効かチェック
                 if (!CoordinateTransformation.IsValidRegion(region, virtualScreen.Bounds))
                 {
@@ -82,17 +105,17 @@ namespace Shuyu.Service
 
                 progress?.Invoke(25, "スクリーンキャプチャ中...");
 
-                // バックグラウンドスレッドでキャプチャ実行
-                var bitmap = await Task.Run(() => CaptureScreenRegion(region, cancellationToken), cancellationToken);
-                
+                // バックグラウンドスレッドでキャプチャ実行（実装は IImageCapture に委譲）
+                var bitmap = await Task.Run(() => _imageCapture.CaptureRegionToBitmap(region, cancellationToken), cancellationToken);
+
                 if (bitmap == null)
                     return new CaptureResult("スクリーンキャプチャに失敗しました");
 
                 progress?.Invoke(75, "画像変換中...");
 
-                // BitmapSourceに変換
-                var bitmapSource = await Task.Run(() => ConvertToBitmapSource(bitmap, cancellationToken), cancellationToken);
-                
+                // BitmapSourceに変換（IImageCapture 実装に委譲）
+                var bitmapSource = await Task.Run(() => _imageCapture.ConvertBitmapToBitmapSource(bitmap, cancellationToken), cancellationToken);
+
                 // 元のBitmapを破棄
                 bitmap.Dispose();
 
@@ -102,7 +125,7 @@ namespace Shuyu.Service
                 progress?.Invoke(100, "完了");
 
                 LogService.LogInfo($"キャプチャ完了: {region} -> {bitmapSource.PixelWidth}x{bitmapSource.PixelHeight}");
-                
+
                 return new CaptureResult(bitmapSource, region);
             }
             catch (OperationCanceledException)
@@ -238,7 +261,7 @@ namespace Shuyu.Service
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
                 GC.Collect();
-                
+
                 LogService.LogDebug("メモリ最適化完了");
             }
             catch (Exception ex)
@@ -255,10 +278,10 @@ namespace Shuyu.Service
             if (_disposed) return;
 
             _disposed = true;
-            
+
             // 最終クリーンアップ
             OptimizeMemory();
-            
+
             LogService.LogDebug("AsyncScreenCaptureService破棄完了");
         }
     }
