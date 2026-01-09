@@ -19,7 +19,7 @@ namespace Shuyu.Resources {
     // または Visual Studio のようなツールを使用して自動生成されました。
     // メンバーを追加または削除するには、.ResX ファイルを編集して、/str オプションと共に
     // ResGen を実行し直すか、または VS プロジェクトをビルドし直します。
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "18.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class Strings {
@@ -61,6 +61,33 @@ namespace Shuyu.Resources {
         }
         
         /// <summary>
+        ///   すべてのファイル (*.*)|*.* に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string AllFilesFilter {
+            get {
+                return ResourceManager.GetString("AllFilesFilter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Bitmap 画像 (*.bmp)|*.bmp に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string BmpImageFilter {
+            get {
+                return ResourceManager.GetString("BmpImageFilter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   キャンセル に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string Cancel {
+            get {
+                return ResourceManager.GetString("Cancel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   クリップボードコピーエラー に類似しているローカライズされた文字列を検索します。
         /// </summary>
         internal static string ClipboardCopyError {
@@ -97,11 +124,29 @@ namespace Shuyu.Resources {
         }
         
         /// <summary>
+        ///   DDS 画像 (*.dds)|*.dds に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string DdsImageFilter {
+            get {
+                return ResourceManager.GetString("DdsImageFilter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   エラー に類似しているローカライズされた文字列を検索します。
         /// </summary>
         internal static string Error {
             get {
                 return ResourceManager.GetString("Error", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   終了 に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string Exit {
+            get {
+                return ResourceManager.GetString("Exit", resourceCulture);
             }
         }
         
@@ -142,146 +187,20 @@ namespace Shuyu.Resources {
         }
         
         /// <summary>
-        ///   保存 に類似しているローカライズされた文字列を検索します。
+        ///   無効なファイルパスが指定されました: {0} に類似しているローカライズされた文字列を検索します。
         /// </summary>
-        internal static string Save {
+        internal static string InvalidFilePathSpecified {
             get {
-                return ResourceManager.GetString("Save", resourceCulture);
+                return ResourceManager.GetString("InvalidFilePathSpecified", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   保存に失敗しました: {0} に類似しているローカライズされた文字列を検索します。
+        ///   JPEG 画像 (*.jpg;*.jpeg)|*.jpg;*.jpeg に類似しているローカライズされた文字列を検索します。
         /// </summary>
-        internal static string SaveFailed {
+        internal static string JpegImageFilter {
             get {
-                return ResourceManager.GetString("SaveFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   画像を保存 に類似しているローカライズされた文字列を検索します。
-        /// </summary>
-        internal static string SaveImage {
-            get {
-                return ResourceManager.GetString("SaveImage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   終了 に類似しているローカライズされた文字列を検索します。
-        /// </summary>
-        internal static string Exit {
-            get {
-                return ResourceManager.GetString("Exit", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   ピン留めをすべて削除 に類似しているローカライズされた文字列を検索します。
-        /// </summary>
-        internal static string RemoveAllPinned {
-            get {
-                return ResourceManager.GetString("RemoveAllPinned", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   設定 に類似しているローカライズされた文字列を検索します。
-        /// </summary>
-        internal static string Settings {
-            get {
-                return ResourceManager.GetString("Settings", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Shuyu v{0} に類似しているローカライズされた文字列を検索します。
-        /// </summary>
-        internal static string ShuyuVersionFormat {
-            get {
-                return ResourceManager.GetString("ShuyuVersionFormat", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Shuyu v-.-.- に類似しているローカライズされた文字列を検索します。
-        /// </summary>
-        internal static string ShuyuVersionUnknown {
-            get {
-                return ResourceManager.GetString("ShuyuVersionUnknown", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   キャプチャ開始 (Shift+PrintScreen) に類似しているローカライズされた文字列を検索します。
-        /// </summary>
-        internal static string StartCapture {
-            get {
-                return ResourceManager.GetString("StartCapture", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   ピン留めの表示/非表示を切り替え に類似しているローカライズされた文字列を検索します。
-        /// </summary>
-        internal static string TogglePinnedVisibility {
-            get {
-                return ResourceManager.GetString("TogglePinnedVisibility", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   バージョン情報 に類似しているローカライズされた文字列を検索します。
-        /// </summary>
-        internal static string VersionInfo {
-            get {
-                return ResourceManager.GetString("VersionInfo", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   キャンセル に類似しているローカライズされた文字列を検索します。
-        /// </summary>
-        internal static string Cancel {
-            get {
-                return ResourceManager.GetString("Cancel", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   OK に類似しているローカライズされた文字列を検索します。
-        /// </summary>
-        internal static string OK {
-            get {
-                return ResourceManager.GetString("OK", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   設定を変更したら「OK」を押してください。低レベルフックは他アプリに影響を与える可能性があるため、必要な場合のみ有効にしてください。 に類似しているローカライズされた文字列を検索します。
-        /// </summary>
-        internal static string SettingsDescription {
-            get {
-                return ResourceManager.GetString("SettingsDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   設定 に類似しているローカライズされた文字列を検索します。
-        /// </summary>
-        internal static string SettingsWindowTitle {
-            get {
-                return ResourceManager.GetString("SettingsWindowTitle", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   低レベルキーボードフックを使用する (PrintScreen を抑止する) に類似しているローカライズされた文字列を検索します。
-        /// </summary>
-        internal static string UseLowLevelHook {
-            get {
-                return ResourceManager.GetString("UseLowLevelHook", resourceCulture);
+                return ResourceManager.GetString("JpegImageFilter", resourceCulture);
             }
         }
         
@@ -322,47 +241,11 @@ namespace Shuyu.Resources {
         }
         
         /// <summary>
-        ///   すべてのファイル (*.*)|*.* に類似しているローカライズされた文字列を検索します。
+        ///   OK に類似しているローカライズされた文字列を検索します。
         /// </summary>
-        internal static string AllFilesFilter {
+        internal static string OK {
             get {
-                return ResourceManager.GetString("AllFilesFilter", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Bitmap 画像 (*.bmp)|*.bmp に類似しているローカライズされた文字列を検索します。
-        /// </summary>
-        internal static string BmpImageFilter {
-            get {
-                return ResourceManager.GetString("BmpImageFilter", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   DDS 画像 (*.dds)|*.dds に類似しているローカライズされた文字列を検索します。
-        /// </summary>
-        internal static string DdsImageFilter {
-            get {
-                return ResourceManager.GetString("DdsImageFilter", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   無効なファイルパスが指定されました: {0} に類似しているローカライズされた文字列を検索します。
-        /// </summary>
-        internal static string InvalidFilePathSpecified {
-            get {
-                return ResourceManager.GetString("InvalidFilePathSpecified", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   JPEG 画像 (*.jpg;*.jpeg)|*.jpg;*.jpeg に類似しているローカライズされた文字列を検索します。
-        /// </summary>
-        internal static string JpegImageFilter {
-            get {
-                return ResourceManager.GetString("JpegImageFilter", resourceCulture);
+                return ResourceManager.GetString("OK", resourceCulture);
             }
         }
         
@@ -376,11 +259,128 @@ namespace Shuyu.Resources {
         }
         
         /// <summary>
+        ///   ピン留めをすべて削除 に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string RemoveAllPinned {
+            get {
+                return ResourceManager.GetString("RemoveAllPinned", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   保存 に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string Save {
+            get {
+                return ResourceManager.GetString("Save", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   保存に失敗しました: {0} に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string SaveFailed {
+            get {
+                return ResourceManager.GetString("SaveFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   画像を保存 に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string SaveImage {
+            get {
+                return ResourceManager.GetString("SaveImage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   設定 に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string Settings {
+            get {
+                return ResourceManager.GetString("Settings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   設定を変更したら「OK」を押してください。低レベルフックは他アプリに影響を与える可能性があるため、必要な場合のみ有効にしてください。 に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string SettingsDescription {
+            get {
+                return ResourceManager.GetString("SettingsDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   設定 に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string SettingsWindowTitle {
+            get {
+                return ResourceManager.GetString("SettingsWindowTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Shuyu v{0} に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string ShuyuVersionFormat {
+            get {
+                return ResourceManager.GetString("ShuyuVersionFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Shuyu v-.-.- に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string ShuyuVersionUnknown {
+            get {
+                return ResourceManager.GetString("ShuyuVersionUnknown", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   キャプチャ開始 (Shift+PrintScreen) に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string StartCapture {
+            get {
+                return ResourceManager.GetString("StartCapture", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   ピン留めの表示/非表示を切り替え に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string TogglePinnedVisibility {
+            get {
+                return ResourceManager.GetString("TogglePinnedVisibility", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   未対応の拡張子です: {0} に類似しているローカライズされた文字列を検索します。
         /// </summary>
         internal static string UnsupportedFileExtension {
             get {
                 return ResourceManager.GetString("UnsupportedFileExtension", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   低レベルキーボードフックを使用する (PrintScreen を抑止する) に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string UseLowLevelHook {
+            get {
+                return ResourceManager.GetString("UseLowLevelHook", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   バージョン情報 に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string VersionInfo {
+            get {
+                return ResourceManager.GetString("VersionInfo", resourceCulture);
             }
         }
         
