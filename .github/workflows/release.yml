@@ -45,9 +45,12 @@ jobs:
         $csproj = Get-ChildItem -Path .  -Filter "*.csproj" -Recurse -File | Select-Object -First 1
         if ($csproj) {
           [xml]$proj = Get-Content $csproj.FullName
-          $versionFromCsproj = $proj.Project.PropertyGroup.Version
-          if (![string]::IsNullOrWhiteSpace($versionFromCsproj)) {
-            $baseVersion = $versionFromCsproj.Trim()
+          $versionFromCsproj = $proj.Project.PropertyGroup.Version | Select-Object -First 1
+          if ($versionFromCsproj) {
+            $trimmed = $versionFromCsproj.ToString().Trim()
+            if (![string]::IsNullOrWhiteSpace($trimmed)) {
+              $baseVersion = $trimmed
+            }
           }
         }
 
