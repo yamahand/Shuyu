@@ -12,7 +12,10 @@ namespace Shuyu
         private bool _isInitializing = true;
         private bool _isUpdatingLanguageCombo = false;
         private string? _originalLanguage;
-        
+
+        public bool IsInitializing => _isInitializing;
+        public bool IsUpdatingLanguageCombo => _isUpdatingLanguageCombo;
+
         /// <summary>
         /// SettingsWindow の新しいインスタンスを初期化します。
         /// </summary>
