@@ -54,6 +54,8 @@ jobs:
         }
 
         # ビルド番号を追加（例: 0.1.0 -> 0.1.0.123）
+        # スペースが含まれている可能性があるので、Trimしてから結合
+        $baseVersion = $baseVersion.Trim()
         $fullVersion = "$baseVersion.${{ github.run_number }}"
 
         # 短縮コミットハッシュも生成
