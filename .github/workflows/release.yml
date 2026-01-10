@@ -44,8 +44,8 @@ jobs:
         $baseVersion = "0.1.0"  # デフォルト値を先に設定
         $csproj = Get-ChildItem -Path .  -Filter "*.csproj" -Recurse -File | Select-Object -First 1
         if ($csproj) {
-          [xml]$proj = Get-Content $csproj. FullName
-          $versionFromCsproj = $proj. Project.PropertyGroup.Version
+          [xml]$proj = Get-Content $csproj.FullName
+          $versionFromCsproj = $proj.Project.PropertyGroup.Version
           if (![string]::IsNullOrWhiteSpace($versionFromCsproj)) {
             $baseVersion = $versionFromCsproj.Trim()
           }
