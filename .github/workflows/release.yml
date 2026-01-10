@@ -41,21 +41,21 @@ jobs:
       shell: pwsh
       run: |
         # csprojファイルを再帰検索して最初に見つかったものを使う（見つからなければデフォルト）
-        $csproj = Get-ChildItem -Path . -Filter "*.csproj" -Recurse -File | Select-Object -First 1
+        $baseVersion = "0.1.0"  # デフォルト値を先に設定
+        $csproj = Get-ChildItem -Path .  -Filter "*.csproj" -Recurse -File | Select-Object -First 1
         if ($csproj) {
           [xml]$proj = Get-Content $csproj.FullName
-          $baseVersion = $proj.Project.PropertyGroup.Version
-        } else {
-          $baseVersion = $null
+          $versionFromCsproj = $proj.Project.PropertyGroup.Version | Select-Object -First 1
+          if ($versionFromCsproj) {
+            $trimmed = $versionFromCsproj.ToString().Trim()
+            if (![string]::IsNullOrWhiteSpace($trimmed)) {
+              $baseVersion = $trimmed
+            }
+          }
         }
 
-        if (-not $baseVersion) {
-          $baseVersion = "0.1.0"
-        }
-
-        # ビルド番号を追加（例: 0.1.0 -> 0.1.0.123）
+        # ビルド番号を追加（例:  0.1.0 -> 0.1.0.123）
         $fullVersion = "$baseVersion.${{ github.run_number }}"
-
         # 短縮コミットハッシュも生成
         $sha = "${{ github.sha }}"
         $shortSha = if ($sha.Length -ge 7) { $sha.Substring(0, 7) } else { $sha }
