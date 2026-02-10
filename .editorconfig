@@ -231,10 +231,6 @@ dotnet_naming_rule.enum_should_be_pascal_case.severity = warning
 dotnet_naming_rule.enum_should_be_pascal_case.symbols = enum
 dotnet_naming_rule.enum_should_be_pascal_case.style = pascal_case
 
-dotnet_naming_rule.property_should_be_camel_case.severity = warning
-dotnet_naming_rule.property_should_be_camel_case.symbols = property
-dotnet_naming_rule.property_should_be_camel_case.style = camel_case
-
 dotnet_naming_rule.public_field_should_be_camel_case.severity = warning
 dotnet_naming_rule.public_field_should_be_camel_case.symbols = public_field
 dotnet_naming_rule.public_field_should_be_camel_case.style = camel_case
@@ -327,3 +323,40 @@ dotnet_naming_style.begins_with___camel_case.required_prefix = _
 dotnet_naming_style.begins_with___camel_case.required_suffix = 
 dotnet_naming_style.begins_with___camel_case.word_separator = 
 dotnet_naming_style.begins_with___camel_case.capitalization = camel_case
+
+########################################
+# Naming rules (WPF / .NET standard)
+########################################
+
+# Properties must be PascalCase
+dotnet_naming_rule.properties_should_be_pascalcase.severity = warning
+dotnet_naming_rule.properties_should_be_pascalcase.symbols = properties
+dotnet_naming_rule.properties_should_be_pascalcase.style = pascal_case
+
+dotnet_naming_symbols.properties.applicable_kinds = property
+dotnet_naming_symbols.properties.applicable_accessibilities = public, internal, protected, private
+
+
+# Private fields must be _camelCase
+dotnet_naming_rule.private_fields_should_be_underscore_camelcase.severity = warning
+dotnet_naming_rule.private_fields_should_be_underscore_camelcase.symbols = private_fields
+dotnet_naming_rule.private_fields_should_be_underscore_camelcase.style = begins_with___camel_case
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+
+
+# Locals and parameters must be camelCase
+dotnet_naming_rule.locals_and_parameters_should_be_camelcase.severity = suggestion
+dotnet_naming_rule.locals_and_parameters_should_be_camelcase.symbols = locals_and_parameters
+dotnet_naming_rule.locals_and_parameters_should_be_camelcase.style = camel_case
+
+dotnet_naming_symbols.locals_and_parameters.applicable_kinds = local, parameter
+
+
+# Interfaces must start with I
+dotnet_naming_rule.interfaces_should_begin_with_i.severity = warning
+dotnet_naming_rule.interfaces_should_begin_with_i.symbols = interfaces
+dotnet_naming_rule.interfaces_should_begin_with_i.style = begins_with_i
+
+dotnet_naming_symbols.interfaces.applicable_kinds = interface

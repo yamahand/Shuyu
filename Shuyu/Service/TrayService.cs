@@ -50,34 +50,57 @@ public class TrayService : IDisposable
     /// <param name="onCapture">キャプチャ要求時に呼び出されるコールバック。</param>
     /// <param name="onSettings">設定表示要求時に呼び出されるコールバック（未使用）。</param>
     /// <param name="onExit">終了要求時に呼び出されるコールバック。</param>
+    public static TrayService? Current { get; private set; }
+
     public TrayService(Action onCapture, Action onSettings, Action onExit)
     {
+        Current = this;
         // コールバック関数を保存
         _onCaptureRequested = onCapture;
         _onSettingsRequested = onSettings;
         _onExitRequested = onExit;
 
-        // トレイアイコンとコンテキストメニューを初期化
         InitializeTrayIcon();
 
-        // HotkeyManager を作成してホットキー機能を初期化
         _hotkeyManager = new HotkeyManager();
         LogService.LogInfo("[TrayService] HotkeyManager created");
 
-        // 保存された設定を読み込み
         var settings = UserSettingsStore.Load();
         _useLowLevelHook = settings.useLowLevelHook;
 
-        // 読み込んだ設定に応じてホットキーモードを適用
-        LogService.LogInfo($"[TrayService] Applying saved hook setting: useLowLevelHook={_useLowLevelHook}");
-        _hotkeyManager.ApplyUseLowLevelHook(_useLowLevelHook, true);
+        var modifiers = settings.hotkey?.modifiers ?? 0x0004;
+        var virtualKey = settings.hotkey?.virtualKey ?? 0x2C;
 
-        // ホットキー押下時にキャプチャコールバックを呼び出すよう設定
+        LogService.LogInfo($"[TrayService] Applying saved hotkey setting: useLowLevelHook={_useLowLevelHook}, mod={modifiers:X}, vk={virtualKey:X}");
+        if (_useLowLevelHook)
+            _hotkeyManager.InstallCustomLowLevelHook(modifiers, virtualKey);
+        else
+            _hotkeyManager.RegisterCustomHotkey(modifiers, virtualKey);
+
         _hotkeyManager.HotkeyPressed += () =>
         {
             LogService.LogDebug("[TrayService] HotkeyPressed event received");
             _onCaptureRequested?.Invoke();
         };
+    }
+
+    public void DisableHotkeysForDialog()
+    {
+        _hotkeyManager?.UninstallLowLevelHook();
+        _hotkeyManager?.UnregisterHotkey();
+        LogService.LogInfo("[TrayService] Hotkeys disabled for dialog");
+    }
+
+    public void RestoreHotkeysAfterDialog()
+    {
+        var s = UserSettingsStore.Load();
+        var modifiers = s.hotkey?.modifiers ?? 0x0004;
+        var vk = s.hotkey?.virtualKey ?? 0x2C;
+        if (_useLowLevelHook)
+            _hotkeyManager?.InstallCustomLowLevelHook(modifiers, vk);
+        else
+            _hotkeyManager?.RegisterCustomHotkey(modifiers, vk);
+        LogService.LogInfo("[TrayService] Hotkeys restored after dialog");
     }
 
     /// <summary>
@@ -188,16 +211,12 @@ public class TrayService : IDisposable
             // 設定ウィンドウから新しい設定値を取得
             var wantHook = _settingsWindow.useLowLevelHook;
 
-            // 設定に応じてホットキーモードを切り替え
-            ApplyHookSetting(wantHook);
+            // カスタムホットキー設定を取得
+            var s = UserSettingsStore.Load();
+            var hotkeySettings = s.hotkey;
 
-            // 変更された設定をファイルに永続化
-            var s = new UserSettings
-            {
-                useLowLevelHook = wantHook,
-                language = _settingsWindow.SelectedLanguage
-            };
-            UserSettingsStore.Save(s);
+            // 設定に応じてホットキーモードを切り替え
+            ApplyHookSetting(wantHook, hotkeySettings);
         }
     }
 
@@ -206,21 +225,28 @@ public class TrayService : IDisposable
     /// RegisterHotKey と低レベルキーボードフックのいずれかを有効/無効に切り替えます。
     /// </summary>
     /// <param name="wantHook">低レベルフックを使用する場合は true。</param>
-    private void ApplyHookSetting(bool wantHook)
+    /// <param name="hotkeySettings">適用するホットキー設定。null の場合はデフォルトを使用。</param>
+    private void ApplyHookSetting(bool wantHook, HotkeySettings? hotkeySettings = null)
     {
         // 既に要求された状態と同じ場合は何もしない
-        if (wantHook == _useLowLevelHook) return;
+        if (wantHook == _useLowLevelHook && hotkeySettings == null) return;
+
+        // ホットキー設定を取得（なければデフォルト値）
+        var modifiers = hotkeySettings?.modifiers ?? 0x0004; // デフォルト: Shift
+        var virtualKey = hotkeySettings?.virtualKey ?? 0x2C;  // デフォルト: PrintScreen
 
         if (wantHook)
         {
-            // 低レベルフックモードに切り替え：HotkeyManager に低レベルフック使用を指示
-            _hotkeyManager?.ApplyUseLowLevelHook(true, false);
+            // 低レベルフックモードに切り替え：既存の登録を解除してフックをインストール
+            _hotkeyManager?.UnregisterHotkey();
+            _hotkeyManager?.InstallCustomLowLevelHook(modifiers, virtualKey);
             _useLowLevelHook = true;
         }
         else
         {
-            // RegisterHotkeyモードに切り替え：HotkeyManager に標準ホットキー使用を指示
-            _hotkeyManager?.ApplyUseLowLevelHook(false, false);
+            // RegisterHotkeyモードに切り替え：フックを解除してホットキーを登録
+            _hotkeyManager?.UninstallLowLevelHook();
+            _hotkeyManager?.RegisterCustomHotkey(modifiers, virtualKey);
             _useLowLevelHook = false;
         }
     }

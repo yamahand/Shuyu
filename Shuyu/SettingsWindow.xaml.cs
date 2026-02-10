@@ -12,6 +12,7 @@ namespace Shuyu
         private bool _isInitializing = true;
         private bool _isUpdatingLanguageCombo = false;
         private string? _originalLanguage;
+        private bool _suppressHotkeyFocus = false;
 
         public bool IsInitializing => _isInitializing;
         public bool IsUpdatingLanguageCombo => _isUpdatingLanguageCombo;
@@ -40,7 +41,6 @@ namespace Shuyu
             var languageCombo = this.FindName("LanguageComboBox") as System.Windows.Controls.ComboBox;
             if (languageCombo != null)
             {
-                // 保存された言語設定に基づいてコンボボックスを選択
                 var targetTag = settings.language ?? "";
                 foreach (System.Windows.Controls.ComboBoxItem item in languageCombo.Items)
                 {
@@ -51,6 +51,71 @@ namespace Shuyu
                     }
                 }
             }
+            
+            // ホットキー設定の読み込み
+            var hotkeyTextBox = this.FindName("HotkeyTextBox") as Controls.HotkeyTextBox;
+            if (hotkeyTextBox != null && settings.hotkey != null)
+            {
+                hotkeyTextBox.Modifiers = settings.hotkey.modifiers;
+                hotkeyTextBox.VirtualKey = settings.hotkey.virtualKey;
+            }
+            else if (hotkeyTextBox != null)
+            {
+                hotkeyTextBox.Modifiers = 0x0004; // Shift
+                hotkeyTextBox.VirtualKey = 0x2C;   // PrintScreen
+            }
+            
+            this.useLowLevelHook = settings.useLowLevelHook;
+        }
+
+        private void HotkeyTextBox_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            OpenHotkeyDialog();
+        }
+
+        private void HotkeyTextBox_GotFocus(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing) return;
+            if (_suppressHotkeyFocus)
+            {
+                // ダイアログ直後のフォーカス復帰は一度だけ抑止
+                _suppressHotkeyFocus = false;
+                return;
+            }
+            OpenHotkeyDialog();
+        }
+
+        private void OpenHotkeyDialog()
+        {
+            // ダイアログ期間はホットキーを無効化
+            try
+            {
+                TrayService.Current?.DisableHotkeysForDialog();
+
+                var tb = this.FindName("HotkeyTextBox") as Controls.HotkeyTextBox;
+                uint initMod = tb?.Modifiers ?? 0;
+                uint initVk = tb?.VirtualKey ?? 0;
+
+                var dlg = new Controls.HotkeyDialog(initMod, initVk)
+                {
+                    Owner = this
+                };
+                var res = dlg.ShowDialog();
+                if (res == true && tb != null)
+                {
+                    tb.Modifiers = dlg.SelectedModifiers;
+                    tb.VirtualKey = dlg.SelectedVirtualKey;
+                }
+            }
+            finally
+            {
+                TrayService.Current?.RestoreHotkeysAfterDialog();
+
+                // ダイアログ終了直後のフォーカス戻りでの再起動を抑止
+                _suppressHotkeyFocus = true;
+                var okButton = this.FindName("OKButton") as System.Windows.Controls.Button;
+                okButton?.Focus();
+            }
         }
         
         private void ApplyLocalization()
@@ -60,6 +125,14 @@ namespace Shuyu
             var languageLabel = this.FindName("LanguageLabel") as System.Windows.Controls.Label;
             if (languageLabel != null)
                 languageLabel.Content = Strings.Language;
+            
+            var hotkeyLabel = this.FindName("HotkeyLabel") as System.Windows.Controls.Label;
+            if (hotkeyLabel != null)
+                hotkeyLabel.Content = Strings.Hotkey;
+            
+            var hotkeyHintText = this.FindName("HotkeyHintText") as System.Windows.Controls.TextBlock;
+            if (hotkeyHintText != null)
+                hotkeyHintText.Text = Strings.HotkeyHint;
             
             // コンボボックス項目の更新
             var languageCombo = this.FindName("LanguageComboBox") as System.Windows.Controls.ComboBox;
@@ -171,11 +244,25 @@ namespace Shuyu
             var selectedLanguage = this.SelectedLanguage;
             LocalizationService.SetLanguage(selectedLanguage);
             
+            // ホットキー設定を取得
+            var hotkeyTextBox = this.FindName("HotkeyTextBox") as Controls.HotkeyTextBox;
+            HotkeySettings? hotkeySettings = null;
+            if (hotkeyTextBox != null && hotkeyTextBox.VirtualKey != 0)
+            {
+                hotkeySettings = new HotkeySettings
+                {
+                    modifiers = hotkeyTextBox.Modifiers,
+                    virtualKey = hotkeyTextBox.VirtualKey,
+                    displayText = hotkeyTextBox.Text
+                };
+            }
+            
             // 設定を保存
             var settings = new UserSettings
             {
                 useLowLevelHook = this.useLowLevelHook,
-                language = selectedLanguage
+                language = selectedLanguage,
+                hotkey = hotkeySettings
             };
             UserSettingsStore.Save(settings);
             

@@ -241,6 +241,24 @@ namespace Shuyu.Resources {
         }
         
         /// <summary>
+        ///   ホットキー に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string Hotkey {
+            get {
+                return ResourceManager.GetString("Hotkey", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   クリックしてキーを入力、Escでクリア に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string HotkeyHint {
+            get {
+                return ResourceManager.GetString("HotkeyHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   OK に類似しているローカライズされた文字列を検索します。
         /// </summary>
         internal static string OK {
@@ -390,6 +408,114 @@ namespace Shuyu.Resources {
         internal static string WindowCreatedAt {
             get {
                 return ResourceManager.GetString("WindowCreatedAt", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   リセット に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string Reset {
+            get {
+                return ResourceManager.GetString("Reset", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   アクティブ化のショートカット に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string HotkeyDialogTitle {
+            get {
+                return ResourceManager.GetString("HotkeyDialogTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   このショートカットを変更するには、キーの組み合わせを押してください。Windows キー、Ctrl、Alt、または Shift で始まるショートカットのみが有効です。未設定は保存できません。 に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string HotkeyDialogDesc {
+            get {
+                return ResourceManager.GetString("HotkeyDialogDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   このショートカットは使用できません。 に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string HotkeyInvalid {
+            get {
+                return ResourceManager.GetString("HotkeyInvalid", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   未設定（保存不可） に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string HotkeyNoneSelectedInfo {
+            get {
+                return ResourceManager.GetString("HotkeyNoneSelectedInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   修飾キー（Win/Ctrl/Alt/Shift）が必要です。 に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string HotkeyErrorRequiresModifier {
+            get {
+                return ResourceManager.GetString("HotkeyErrorRequiresModifier", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   キーは最大3までです。 に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string HotkeyErrorTooManyKeys {
+            get {
+                return ResourceManager.GetString("HotkeyErrorTooManyKeys", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   主キーが必要です。 に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string HotkeyErrorNoMainKey {
+            get {
+                return ResourceManager.GetString("HotkeyErrorNoMainKey", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   禁止キーを含んでいます。 に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string HotkeyErrorForbiddenKey {
+            get {
+                return ResourceManager.GetString("HotkeyErrorForbiddenKey", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   OSに予約されているショートカットです。 に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string HotkeyErrorOSReservedCombo {
+            get {
+                return ResourceManager.GetString("HotkeyErrorOSReservedCombo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   PrintScreen は修飾付きのみ許可です。 に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string HotkeyErrorPrintScreenNeedsModifier {
+            get {
+                return ResourceManager.GetString("HotkeyErrorPrintScreenNeedsModifier", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   ショートカットの登録に失敗しました。別の組み合わせを選択してください。 に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string HotkeyPreflightFailed {
+            get {
+                return ResourceManager.GetString("HotkeyPreflightFailed", resourceCulture);
             }
         }
     }

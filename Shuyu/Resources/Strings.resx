@@ -151,6 +151,48 @@
   <data name="LanguageSystem" xml:space="preserve">
     <value>システム設定</value>
   </data>
+  <data name="Reset" xml:space="preserve">
+    <value>リセット</value>
+  </data>
+  <data name="HotkeyDialogTitle" xml:space="preserve">
+    <value>アクティブ化のショートカット</value>
+  </data>
+  <data name="HotkeyDialogDesc" xml:space="preserve">
+    <value>このショートカットを変更するには、キーの組み合わせを押してください。Windows キー、Ctrl、Alt、または Shift で始まるショートカットのみが有効です。未設定は保存できません。</value>
+  </data>
+  <data name="HotkeyInvalid" xml:space="preserve">
+    <value>このショートカットは使用できません。</value>
+  </data>
+  <data name="HotkeyNoneSelectedInfo" xml:space="preserve">
+    <value>未設定（保存不可）</value>
+  </data>
+  <data name="HotkeyErrorRequiresModifier" xml:space="preserve">
+    <value>修飾キー（Win/Ctrl/Alt/Shift）が必要です。</value>
+  </data>
+  <data name="HotkeyErrorTooManyKeys" xml:space="preserve">
+    <value>キーは最大3までです。</value>
+  </data>
+  <data name="HotkeyErrorNoMainKey" xml:space="preserve">
+    <value>主キーが必要です。</value>
+  </data>
+  <data name="HotkeyErrorForbiddenKey" xml:space="preserve">
+    <value>禁止キーを含んでいます。</value>
+  </data>
+  <data name="HotkeyErrorOSReservedCombo" xml:space="preserve">
+    <value>OSに予約されているショートカットです。</value>
+  </data>
+  <data name="HotkeyErrorPrintScreenNeedsModifier" xml:space="preserve">
+    <value>PrintScreen は修飾付きのみ許可です。</value>
+  </data>
+  <data name="HotkeyPreflightFailed" xml:space="preserve">
+    <value>ショートカットの登録に失敗しました。別の組み合わせを選択してください。</value>
+  </data>
+  <data name="Hotkey" xml:space="preserve">
+    <value>ホットキー</value>
+  </data>
+  <data name="HotkeyHint" xml:space="preserve">
+    <value>クリックしてキーを入力、Escでクリア</value>
+  </data>
   
   <!-- File filter strings -->
   <data name="PngImageFilter" xml:space="preserve">

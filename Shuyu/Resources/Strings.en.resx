@@ -151,6 +151,48 @@
   <data name="LanguageSystem" xml:space="preserve">
     <value>System Default</value>
   </data>
+  <data name="Reset" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="HotkeyDialogTitle" xml:space="preserve">
+    <value>Activation Shortcut</value>
+  </data>
+  <data name="HotkeyDialogDesc" xml:space="preserve">
+    <value>Press a key combination to change this shortcut. Only shortcuts starting with Windows, Ctrl, Alt, or Shift are valid. Unset cannot be saved.</value>
+  </data>
+  <data name="HotkeyInvalid" xml:space="preserve">
+    <value>This shortcut cannot be used.</value>
+  </data>
+  <data name="HotkeyNoneSelectedInfo" xml:space="preserve">
+    <value>Unset (cannot save)</value>
+  </data>
+  <data name="HotkeyErrorRequiresModifier" xml:space="preserve">
+    <value>A modifier key (Win/Ctrl/Alt/Shift) is required.</value>
+  </data>
+  <data name="HotkeyErrorTooManyKeys" xml:space="preserve">
+    <value>Up to 3 keys are allowed.</value>
+  </data>
+  <data name="HotkeyErrorNoMainKey" xml:space="preserve">
+    <value>A main key is required.</value>
+  </data>
+  <data name="HotkeyErrorForbiddenKey" xml:space="preserve">
+    <value>Contains forbidden keys.</value>
+  </data>
+  <data name="HotkeyErrorOSReservedCombo" xml:space="preserve">
+    <value>This shortcut is reserved by Windows.</value>
+  </data>
+  <data name="HotkeyErrorPrintScreenNeedsModifier" xml:space="preserve">
+    <value>PrintScreen is allowed only with modifiers.</value>
+  </data>
+  <data name="HotkeyPreflightFailed" xml:space="preserve">
+    <value>Failed to register the shortcut. Please choose another combination.</value>
+  </data>
+  <data name="Hotkey" xml:space="preserve">
+    <value>Hotkey</value>
+  </data>
+  <data name="HotkeyHint" xml:space="preserve">
+    <value>Click to input key, Esc to clear</value>
+  </data>
   
   <!-- File filter strings -->
   <data name="PngImageFilter" xml:space="preserve">

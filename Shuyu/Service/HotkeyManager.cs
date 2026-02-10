@@ -40,6 +40,16 @@ namespace Shuyu
         /// </summary>
         private readonly object _lock = new object();
 
+        /// <summary>
+        /// 現在登録されているホットキーのモディファイア。
+        /// </summary>
+        private uint _currentModifiers = ModShift;
+        
+        /// <summary>
+        /// 現在登録されているホットキーの仮想キーコード。
+        /// </summary>
+        private uint _currentVirtualKey = VkSnapshot;
+
         // 定数 (命名規則に合わせて _camelCase )
         private const int WmHotkey = 0x0312;          // WM_HOTKEY メッセージ
         private const int HotkeyId = 0x9000;          // ホットキーの識別ID
@@ -70,13 +80,24 @@ namespace Shuyu
         /// <returns>登録に成功した場合は true。</returns>
         public bool RegisterShiftPrintScreenHotkey()
         {
+            return RegisterCustomHotkey(ModShift, VkSnapshot);
+        }
+
+        /// <summary>
+        /// カスタムホットキーを登録します。
+        /// </summary>
+        /// <param name="modifiers">モディファイアキー</param>
+        /// <param name="virtualKey">仮想キーコード</param>
+        /// <returns>登録に成功した場合は true。</returns>
+        public bool RegisterCustomHotkey(uint modifiers, uint virtualKey)
+        {
             lock (_lock) // スレッドセーフ処理
             {
-                LogService.LogDebug("[HotkeyManager] RegisterShiftPrintScreenHotkey called");
+                LogService.LogDebug($"[HotkeyManager] RegisterCustomHotkey: mod={modifiers:X}, vk={virtualKey:X}");
                 // メッセージウィンドウが未作成の場合は作成
                 EnsureMessageWindow();
-                // Win32 API でホットキーを登録（Shift + PrintScreen）
-                var ok = RegisterHotKey(_hwndSource!.Handle, HotkeyId, ModShift, VkSnapshot);
+                // Win32 API でホットキーを登録
+                var ok = RegisterHotKey(_hwndSource!.Handle, HotkeyId, modifiers, virtualKey);
 #if DEBUG
                 if (!ok)
                 {
@@ -84,7 +105,13 @@ namespace Shuyu
                     LogService.LogWarning($"[HotkeyManager] RegisterHotKey failed. Err={Marshal.GetLastWin32Error()}");
                 }
 #endif
-                LogService.LogInfo($"[HotkeyManager] RegisterShiftPrintScreenHotkey result={ok}");
+                if (ok)
+                {
+                    // 登録成功時は現在のホットキー設定を保存
+                    _currentModifiers = modifiers;
+                    _currentVirtualKey = virtualKey;
+                }
+                LogService.LogInfo($"[HotkeyManager] RegisterCustomHotkey result={ok}");
                 return ok;
             }
         }
@@ -116,6 +143,17 @@ namespace Shuyu
         /// </summary>
         /// <returns>インストールに成功した場合は true。</returns>
         public bool InstallLowLevelHook()
+        {
+            return InstallCustomLowLevelHook(ModShift, VkSnapshot);
+        }
+
+        /// <summary>
+        /// カスタムホットキー用の低レベルキーボードフックをインストールします。
+        /// </summary>
+        /// <param name="modifiers">モディファイアキー</param>
+        /// <param name="virtualKey">仮想キーコード</param>
+        /// <returns>インストールに成功した場合は true。</returns>
+        public bool InstallCustomLowLevelHook(uint modifiers, uint virtualKey)
         {
             lock (_lock) // スレッドセーフ処理
             {
@@ -157,11 +195,11 @@ namespace Shuyu
                         LogService.LogError($"[HotkeyManager] Install hook failed. GetLastError={err}");
 
                         // フォールバックを試みる
-                        var ok = RegisterShiftPrintScreenHotkey();
+                        var ok = RegisterCustomHotkey(modifiers, virtualKey);
                         useLowLevelHook = false;
                         if (ok)
                         {
-                            LogService.LogInfo("[HotkeyManager] Fallback: Registered Shift+PrintScreen via RegisterHotKey");
+                            LogService.LogInfo("[HotkeyManager] Fallback: Registered custom hotkey via RegisterHotKey");
                             return true; // フォールバック成功ならホットキーは機能するので true
                         }
                         else
@@ -173,6 +211,9 @@ namespace Shuyu
 
                     // フラグを更新
                     useLowLevelHook = true;
+                    // カスタムホットキー設定を保存
+                    _currentModifiers = modifiers;
+                    _currentVirtualKey = virtualKey;
                     LogService.LogInfo($"[HotkeyManager] Low-level hook installed (id={_keyboardHookId})");
                     return true;
                 }
@@ -186,9 +227,9 @@ namespace Shuyu
                     useLowLevelHook = false;
                     try
                     {
-                        if (RegisterShiftPrintScreenHotkey())
+                        if (RegisterCustomHotkey(modifiers, virtualKey))
                         {
-                            LogService.LogInfo("[HotkeyManager] Fallback: Registered Shift+PrintScreen via RegisterHotKey after exception");
+                            LogService.LogInfo("[HotkeyManager] Fallback: Registered custom hotkey via RegisterHotKey after exception");
                             return true; // フォールバック成功
                         }
                         else
@@ -328,7 +369,7 @@ namespace Shuyu
         }
 
         /// <summary>
-        /// 低レベルフックのコールバック。PrintScreen と Shift の組み合わせを検出してイベントを発火し、抑止します。
+        /// 低レベルフックのコールバック。登録されたカスタムホットキーの組み合わせを検出してイベントを発火し、抑止します。
         /// </summary>
         private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
@@ -340,19 +381,69 @@ namespace Shuyu
                     // lParam から仮想キーコードを取得
                     int vk = Marshal.ReadInt32(lParam);
                     
-                    // PrintScreen キーが押された場合
-                    if (vk == (int)VkSnapshot)
+                    // 現在登録されている仮想キーと一致するかチェック
+                    if (vk == (int)_currentVirtualKey)
                     {
-                        // Shift キーが同時に押されているかチェック
-                        short s = GetAsyncKeyState((int)Keys.ShiftKey);
-                        bool shiftDown = (s & 0x8000) != 0; // 最上位ビットが1なら押下中
+                        // 現在のモディファイア状態を取得
+                        bool modifiersMatch = true;
                         
-                        if (shiftDown)
+                        // Ctrl キーのチェック
+                        if ((_currentModifiers & 0x0002) != 0) // MOD_CONTROL
                         {
-                            // Shift+PrintScreen の組み合わせなのでイベントを発火
-                            LogService.LogDebug("[HotkeyManager] Detected Shift+PrintScreen via low-level hook");
+                            short ctrlState = GetAsyncKeyState((int)Keys.ControlKey);
+                            if ((ctrlState & 0x8000) == 0) modifiersMatch = false;
+                        }
+                        else
+                        {
+                            // Ctrl が不要な場合は押されていないことを確認
+                            short ctrlState = GetAsyncKeyState((int)Keys.ControlKey);
+                            if ((ctrlState & 0x8000) != 0) modifiersMatch = false;
+                        }
+                        
+                        // Alt キーのチェック
+                        if ((_currentModifiers & 0x0001) != 0) // MOD_ALT
+                        {
+                            short altState = GetAsyncKeyState((int)Keys.Menu);
+                            if ((altState & 0x8000) == 0) modifiersMatch = false;
+                        }
+                        else
+                        {
+                            short altState = GetAsyncKeyState((int)Keys.Menu);
+                            if ((altState & 0x8000) != 0) modifiersMatch = false;
+                        }
+                        
+                        // Shift キーのチェック
+                        if ((_currentModifiers & 0x0004) != 0) // MOD_SHIFT
+                        {
+                            short shiftState = GetAsyncKeyState((int)Keys.ShiftKey);
+                            if ((shiftState & 0x8000) == 0) modifiersMatch = false;
+                        }
+                        else
+                        {
+                            short shiftState = GetAsyncKeyState((int)Keys.ShiftKey);
+                            if ((shiftState & 0x8000) != 0) modifiersMatch = false;
+                        }
+                        
+                        // Win キーのチェック
+                        if ((_currentModifiers & 0x0008) != 0) // MOD_WIN
+                        {
+                            short lwinState = GetAsyncKeyState((int)Keys.LWin);
+                            short rwinState = GetAsyncKeyState((int)Keys.RWin);
+                            if ((lwinState & 0x8000) == 0 && (rwinState & 0x8000) == 0) modifiersMatch = false;
+                        }
+                        else
+                        {
+                            short lwinState = GetAsyncKeyState((int)Keys.LWin);
+                            short rwinState = GetAsyncKeyState((int)Keys.RWin);
+                            if ((lwinState & 0x8000) != 0 || (rwinState & 0x8000) != 0) modifiersMatch = false;
+                        }
+                        
+                        if (modifiersMatch)
+                        {
+                            // 設定されたホットキーの組み合わせなのでイベントを発火
+                            LogService.LogDebug($"[HotkeyManager] Detected custom hotkey via low-level hook: mod={_currentModifiers:X}, vk={_currentVirtualKey:X}");
                             PostHotkeyEvent();
-                            // 他のプロセス（例：Snipping Tool）に渡さずに抑止
+                            // 他のプロセスに渡さずに抑止
                             return (IntPtr)1;
                         }
                     }

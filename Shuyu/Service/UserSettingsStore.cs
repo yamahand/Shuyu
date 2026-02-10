@@ -7,6 +7,27 @@ using Shuyu.Service;
 namespace Shuyu
 {
     /// <summary>
+    /// ホットキー設定を表します。
+    /// </summary>
+    internal class HotkeySettings
+    {
+        /// <summary>
+        /// モディファイアキー（Ctrl=0x0002, Alt=0x0001, Shift=0x0004, Win=0x0008の組み合わせ）
+        /// </summary>
+        public uint modifiers { get; set; } = 0x0004; // デフォルト: Shift
+        
+        /// <summary>
+        /// 仮想キーコード
+        /// </summary>
+        public uint virtualKey { get; set; } = 0x2C; // デフォルト: PrintScreen
+        
+        /// <summary>
+        /// 表示用文字列（例: "Shift + PrintScreen"）
+        /// </summary>
+        public string displayText { get; set; } = "Shift + PrintScreen";
+    }
+
+    /// <summary>
     /// ユーザー設定のシリアライズ対象クラスです。
     /// </summary>
     internal class UserSettings
@@ -20,6 +41,11 @@ namespace Shuyu
         /// アプリケーションの言語設定を示します。nullの場合はシステム設定に従います。
         /// </summary>
         public string? language { get; set; } = null;
+        
+        /// <summary>
+        /// ホットキー設定。nullの場合はデフォルト設定（Shift+PrintScreen）を使用します。
+        /// </summary>
+        public HotkeySettings? hotkey { get; set; } = null;
     }
 
     /// <summary>
